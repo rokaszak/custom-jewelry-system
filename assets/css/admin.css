@@ -1,0 +1,1380 @@
+/* Custom Jewelry System Admin Styles - WITH STONE ORDER EDIT MODAL */
+
+/* General Modal Styles */
+.cjs-modal {
+    display: none;
+    position: fixed;
+    z-index: 100000;
+    left: 0;
+    top: 0;
+    width: 100%;
+    height: 100%;
+    overflow: auto;
+    background-color: rgba(0,0,0,0.5);
+}
+
+.cjs-modal-content {
+    background-color: #fefefe;
+    margin: 5% auto;
+    padding: 20px;
+    border: 1px solid #888;
+    width: 90%;
+    max-width: 600px;
+    border-radius: 5px;
+    position: relative;
+}
+
+/* UPDATED: Stone Order Edit Modal - wider for more content */
+#cjs-stone-order-edit-modal .cjs-modal-content {
+    max-width: 800px;
+    width: 95%;
+}
+
+.cjs-modal-close {
+    color: #aaa;
+    float: right;
+    font-size: 28px;
+    font-weight: bold;
+    cursor: pointer;
+    position: absolute;
+    right: 15px;
+    top: 10px;
+}
+
+.cjs-modal-close:hover,
+.cjs-modal-close:focus {
+    color: black;
+    text-decoration: none;
+}
+
+/* Form Styles */
+.cjs-form-row {
+    margin-bottom: 15px;
+}
+
+.cjs-form-row label {
+    display: block;
+    margin-bottom: 5px;
+    font-weight: 600;
+}
+
+.cjs-form-row input,
+.cjs-form-row select,
+.cjs-form-row textarea {
+    width: 100%;
+    max-width: 100%;
+}
+
+.cjs-form-row .button-small {
+    width: auto;
+    margin-left: 5px;
+    padding: 2px 8px;
+    font-size: 11px;
+    line-height: 1.4;
+}
+
+.cjs-form-actions {
+    margin-top: 20px;
+    text-align: right;
+}
+
+.cjs-form-actions .button {
+    margin-left: 10px;
+}
+
+/* Orders Table Styles */
+.cjs-orders-table,
+.cjs-stones-table {
+    font-size: 14px;
+}
+
+/* Drag and Drop Styles for Options */
+.cjs-option-list[data-sortable="true"] {
+    min-height: 20px;
+}
+
+.cjs-option-item[data-sortable="true"] {
+    position: relative;
+    background: #fff;
+    border: 1px solid #ddd;
+    padding: 8px 12px;
+    margin-bottom: 5px;
+    border-radius: 3px;
+    display: flex;
+    align-items: center;
+    transition: all 0.2s ease;
+    border-left: 3px solid #0073aa;
+}
+
+.cjs-option-item[data-sortable="true"]:hover {
+    border-color: #0073aa;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+}
+
+.cjs-option-item[data-sortable="true"].cjs-dragging {
+    opacity: 0.3;
+    transform: rotate(2deg);
+    box-shadow: 0 4px 8px rgba(0,0,0,0.2);
+    z-index: 1000;
+}
+
+.cjs-option-item[data-sortable="true"].cjs-drag-over {
+    border-color: #0073aa;
+    background-color: #f0f8ff;
+    transform: translateY(2px);
+}
+
+.cjs-drag-handle {
+    color: #999;
+    margin-right: 8px;
+    cursor: grab;
+    font-size: 16px;
+    padding: 2px;
+    border-radius: 3px;
+    transition: all 0.2s ease;
+}
+
+.cjs-drag-handle:hover {
+    color: #0073aa;
+    background-color: #f0f0f0;
+    cursor: grabbing;
+}
+
+.cjs-drag-handle:active {
+    cursor: grabbing;
+}
+
+.cjs-option-placeholder {
+    border: 2px dashed #0073aa !important;
+    background-color: #f0f8ff !important;
+    opacity: 0.7;
+    margin-bottom: 5px;
+    border-radius: 3px;
+    height: 40px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: #0073aa;
+    font-style: italic;
+}
+
+.cjs-option-item[data-sortable="true"] .cjs-option-value {
+    flex: 1;
+    margin-right: 8px;
+}
+
+.cjs-option-item[data-sortable="true"] .cjs-delete-option {
+    margin-left: auto;
+}
+
+.cjs-orders-table th,
+.cjs-orders-table td,
+.cjs-stones-table th,
+.cjs-stones-table td {
+    vertical-align: top;
+    padding: 8px 6px;
+}
+
+.cjs-inline-edit {
+    width: 100%;
+    max-width: 120px;
+    font-size: 12px;
+    padding: 2px 4px;
+    border: 1px solid #ddd;
+    border-radius: 3px;
+}
+
+.cjs-inline-stone-edit {
+    width: 100%;
+    font-size: 12px;
+    padding: 2px 4px;
+    border: 1px solid #ddd;
+    border-radius: 3px;
+}
+
+.cjs-small-input {
+    max-width: 80px;
+}
+
+.cjs-small-textarea {
+    min-height: 30px;
+    resize: vertical;
+}
+
+/* UPDATED: Stone Size Input Styles */
+.cjs-size-cell {
+    min-width: 120px;
+}
+
+.cjs-size-inputs {
+    display: flex;
+    gap: 5px;
+    flex-wrap: wrap;
+    align-items: center;
+}
+
+.cjs-size-value {
+    flex: 2;
+    min-width: 60px;
+}
+
+.cjs-size-unit {
+    flex: 1;
+    min-width: 50px;
+}
+
+.cjs-formatted-size {
+    font-size: 11px;
+    color: #666;
+    margin-top: 2px;
+    font-weight: 600;
+}
+
+/* Stone size display in forms */
+.cjs-form-row .cjs-size-flex {
+    display: flex;
+    gap: 10px;
+    align-items: center;
+}
+
+.cjs-form-row .cjs-size-flex input {
+    flex: 2;
+}
+
+.cjs-form-row .cjs-size-flex select {
+    flex: 1;
+}
+
+/* Stone Pills */
+.cjs-stones-column .cjs-stone-pill {
+    display: inline-block;
+    background-color: #f8f9fa;
+    border: 1px solid #dee2e6;
+    border-radius: 12px;
+    padding: 2px 8px;
+    margin: 2px;
+    font-size: 11px;
+    line-height: 1.3;
+}
+
+.cjs-clickable-stone {
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+
+.cjs-clickable-stone:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    background-color: #e9ecef !important;
+}
+
+.cjs-product-stone-group {
+    margin-bottom: 10px;
+    padding-bottom: 8px;
+    border-bottom: 1px solid #eee;
+}
+
+.cjs-product-stone-group:last-child {
+    margin-bottom: 0;
+    padding-bottom: 0;
+    border-bottom: none;
+}
+
+.cjs-product-label {
+    font-weight: 600;
+    color: #333;
+    font-size: 11px;
+    text-transform: uppercase;
+}
+
+.cjs-stone-orders-column .cjs-stone-order-pill {
+    display: block;
+    background-color: #f8f9fa;
+    border: 1px solid #dee2e6;
+    border-radius: 3px;
+    padding: 2px 6px;
+    margin: 2px 0;
+    font-size: 11px;
+}
+
+.cjs-no-stone-order {
+    color: #666;
+    font-style: italic;
+    font-size: 12px;
+}
+
+/* NEW: Clickable Stone Order Styles */
+.cjs-clickable-stone-order {
+    cursor: pointer;
+    transition: all 0.2s ease;
+    display: inline-block;
+    padding: 2px 6px;
+    border-radius: 3px;
+    text-decoration: none;
+    border: 1px solid transparent;
+}
+
+.cjs-clickable-stone-order:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 2px 4px rgba(0,0,0,0.15);
+    border-color: #0073aa;
+    opacity: 0.9;
+    text-decoration: none;
+}
+
+.cjs-clickable-stone-order:active {
+    transform: translateY(0);
+}
+
+.cjs-clickable-stone-order:focus {
+    outline: 2px solid #0073aa;
+    outline-offset: 1px;
+}
+
+/* Filters */
+.cjs-filters {
+    margin: 20px 0;
+    background: #fff;
+    border: 1px solid #ccd0d4;
+    border-radius: 5px;
+    padding: 15px;
+}
+
+.cjs-search-form {
+    display: flex;
+    gap: 10px;
+    align-items: center;
+    flex-wrap: wrap;
+}
+
+.cjs-search-form input,
+.cjs-search-form select {
+    min-width: 150px;
+}
+
+/* Order Meta Box Styles */
+.cjs-order-meta-box {
+    overflow: hidden;
+}
+
+.cjs-order-meta-box p {
+    margin-bottom: 15px;
+}
+
+.cjs-order-meta-box label {
+    display: block;
+    margin-bottom: 5px;
+    font-weight: 600;
+}
+
+.cjs-order-meta-box input,
+.cjs-order-meta-box select,
+.cjs-order-meta-box textarea {
+    width: 100%;
+    max-width: 400px;
+}
+
+/* Stones Meta Box */
+.cjs-stones-meta-box {
+    padding: 15px;
+}
+
+.cjs-stones-by-product {
+    margin-bottom: 20px;
+}
+
+.cjs-add-stone-section {
+    margin-top: 10px;
+}
+
+.cjs-stone-orders-section {
+    background: #f9f9f9;
+    padding: 15px;
+    border-radius: 5px;
+}
+
+/* NEW: Stone Order Edit Modal Specific Styles */
+#cjs-stone-order-edit-modal .cjs-form-row {
+    margin-bottom: 20px;
+}
+
+#edit-stone-order-stones-list {
+    max-height: 200px;
+    overflow-y: auto;
+    border: 1px solid #ddd;
+    padding: 10px;
+    background: #f9f9f9;
+    border-radius: 4px;
+}
+
+#edit-stone-order-stones-list .stone-item {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 8px 0;
+    border-bottom: 1px solid #eee;
+    font-size: 13px;
+}
+
+#edit-stone-order-stones-list .stone-item:last-child {
+    border-bottom: none;
+}
+
+#edit-stone-order-stones-list .stone-item span {
+    flex: 1;
+    padding-right: 10px;
+}
+
+#edit-stone-order-stones-list .remove-stone {
+    color: #dc3545;
+    cursor: pointer;
+    font-size: 11px;
+    padding: 3px 8px;
+    border: 1px solid #dc3545;
+    border-radius: 3px;
+    background: none;
+    transition: all 0.2s ease;
+    flex-shrink: 0;
+}
+
+#edit-stone-order-stones-list .remove-stone:hover {
+    background: #dc3545;
+    color: white;
+    transform: translateY(-1px);
+}
+
+#edit-stone-order-stones-list p {
+    margin: 0;
+    text-align: center;
+    color: #666;
+    font-style: italic;
+    padding: 20px 0;
+}
+
+#edit-stone-order-available-stones {
+    min-height: 120px;
+    font-family: monospace;
+    font-size: 12px;
+}
+
+#edit-stone-order-available-stones option {
+    padding: 3px 5px;
+}
+
+#edit-add-selected-stones {
+    margin-top: 8px;
+    width: 100%;
+}
+
+/* Files Meta Box */
+.cjs-files-meta-box {
+    border-top: 1px solid #eee;
+    padding-top: 15px;
+}
+
+.cjs-file-item {
+    display: flex;
+    align-items: center;
+    padding: 10px;
+    border: 1px solid #ddd;
+    border-radius: 5px;
+    margin-bottom: 10px;
+    background: #f9f9f9;
+}
+
+.cjs-file-preview {
+    width: 300px;
+    height: 300px;
+    margin-right: 15px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: #fff;
+    border: 1px solid #ddd;
+    border-radius: 7px;
+}
+
+.cjs-file-preview img {
+    max-width: 100%;
+    max-height: 100%;
+    border-radius: 7px;
+}
+
+.cjs-file-preview .dashicons {
+    font-size: 48px;
+    color: #666;
+}
+
+.cjs-file-details {
+    flex: 1;
+}
+
+.cjs-file-details strong {
+    display: block;
+    margin-bottom: 5px;
+}
+
+.cjs-file-details p {
+    margin: 0;
+    color: #666;
+    font-size: 13px;
+}
+
+.cjs-file-actions {
+    display: flex;
+    gap: 5px;
+}
+
+.cjs-file-upload {
+    background: #fff;
+    border: 1px solid #ddd;
+    border-radius: 5px;
+    padding: 15px;
+    margin-top: 15px;
+}
+
+.cjs-file-upload h4 {
+    margin-top: 0;
+    margin-bottom: 15px;
+}
+
+.cjs-file-upload p {
+    margin-bottom: 10px;
+}
+
+.cjs-file-upload label {
+    display: block;
+    margin-bottom: 5px;
+    font-weight: 600;
+}
+
+/* Settings Page */
+.cjs-settings-content {
+    background: #fff;
+    border: 1px solid #ccd0d4;
+    border-radius: 5px;
+    margin-top: 20px;
+}
+
+.cjs-options-manager {
+    padding: 20px;
+}
+
+.cjs-option-section {
+    margin-bottom: 30px;
+    padding-bottom: 20px;
+    border-bottom: 1px solid #eee;
+}
+
+.cjs-option-section:last-child {
+    border-bottom: none;
+}
+
+.cjs-option-section h3 {
+    margin-top: 0;
+    margin-bottom: 15px;
+    color: #333;
+}
+
+.cjs-option-list {
+    margin-bottom: 15px;
+}
+
+.cjs-option-item {
+    display: flex;
+    align-items: center;
+    padding: 8px 12px;
+    background: #f9f9f9;
+    border: 1px solid #ddd;
+    border-radius: 3px;
+    margin-bottom: 5px;
+}
+
+.cjs-option-value {
+    font-weight: 600;
+    margin-right: 10px;
+}
+
+.cjs-option-label {
+    color: #666;
+    margin-right: auto;
+    font-style: italic;
+}
+
+.cjs-add-option {
+    display: flex;
+    gap: 10px;
+    align-items: end;
+}
+
+.cjs-add-option input {
+    flex: 1;
+    min-width: 150px;
+}
+
+/* Stone Order Statuses */
+.cjs-stone-order-statuses {
+    margin-bottom: 15px;
+}
+
+/* In Cart Checkbox Styling */
+.cjs-inline-edit[data-field="in_cart"] {
+    width: auto !important;
+    max-width: none !important;
+    margin: 0;
+    vertical-align: middle;
+}
+
+.cjs-inline-edit[data-field="in_cart"]:checked {
+    background-color: #0073aa;
+    border-color: #0073aa;
+}
+
+.cjs-inline-edit[data-field="in_cart"]:focus {
+    box-shadow: 0 0 0 1px #0073aa;
+}
+
+.cjs-status-item {
+    display: flex;
+    align-items: center;
+    padding: 8px 12px;
+    background: #f9f9f9;
+    border: 1px solid #ddd;
+    border-radius: 3px;
+    margin-bottom: 5px;
+}
+
+.cjs-status-color {
+    width: 12px;
+    height: 12px;
+    border-radius: 50%;
+    margin-right: 10px;
+    border: 1px solid rgba(0,0,0,0.1);
+}
+
+.cjs-status-label {
+    font-weight: 600;
+    margin-right: 10px;
+}
+
+.cjs-status-key {
+    color: #666;
+    font-style: italic;
+    margin-right: auto;
+}
+
+/* Activity Log */
+.cjs-activity-log {
+    padding: 20px;
+}
+
+.cjs-log-filters {
+    background: #f9f9f9;
+    border: 1px solid #ddd;
+    border-radius: 5px;
+    padding: 15px;
+    margin-bottom: 20px;
+}
+
+.cjs-log-filters form {
+    display: flex;
+    gap: 10px;
+    align-items: center;
+    flex-wrap: wrap;
+}
+
+.cjs-log-filters input,
+.cjs-log-filters select {
+    min-width: 150px;
+}
+
+.cjs-log-entries table {
+    font-size: 13px;
+}
+
+.cjs-log-entries td {
+    vertical-align: top;
+}
+
+.cjs-log-entries pre {
+    background: #f5f5f5;
+    border: 1px solid #ddd;
+    border-radius: 3px;
+    padding: 5px;
+    max-height: 100px;
+    overflow-y: auto;
+}
+
+/* Status Badges */
+.cjs-status-badge {
+    display: inline-block;
+    padding: 2px 8px;
+    border-radius: 12px;
+    font-size: 11px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+/* Single View Styles */
+.cjs-stone-details,
+.cjs-stone-order-details {
+    margin-top: 20px;
+}
+
+.cjs-detail-section {
+    background: #fff;
+    border: 1px solid #ddd;
+    border-radius: 5px;
+    padding: 20px;
+    margin-bottom: 20px;
+}
+
+.cjs-detail-section h2 {
+    margin-top: 0;
+    padding-bottom: 10px;
+    border-bottom: 1px solid #eee;
+}
+
+.cjs-single-form .form-table th {
+    width: 200px;
+}
+
+.cjs-single-form .form-table input,
+.cjs-single-form .form-table select,
+.cjs-single-form .form-table textarea {
+    width: 100%;
+    max-width: 400px;
+}
+
+/* UPDATED: Size input styling in single form */
+.cjs-single-form .form-table .cjs-size-container {
+    display: flex;
+    gap: 10px;
+    align-items: center;
+    max-width: 400px;
+}
+
+.cjs-single-form .form-table .cjs-size-container input {
+    width: 120px;
+    flex: none;
+}
+
+.cjs-single-form .form-table .cjs-size-container select {
+    width: 120px;
+    flex: none;
+}
+
+.cjs-current-size-display {
+    margin-top: 5px;
+    font-weight: 600;
+    color: #0073aa;
+}
+
+/* WhatsApp Message */
+#cjs-whatsapp-message,
+#cjs-edit-whatsapp-message {
+    background: #f0f8ff;
+    border: 1px solid #0073aa;
+    border-radius: 5px;
+    padding: 15px;
+    margin-top: 15px;
+}
+
+#cjs-whatsapp-text,
+#cjs-edit-whatsapp-text {
+    width: 100%;
+    font-family: monospace;
+    background: #fff;
+    border: 1px solid #ddd;
+    padding: 10px;
+    border-radius: 3px;
+    margin-bottom: 10px;
+}
+
+/* Responsive Design */
+@media (max-width: 768px) {
+    .cjs-modal-content {
+        width: 95%;
+        margin: 10% auto;
+        padding: 15px;
+    }
+    
+    #cjs-stone-order-edit-modal .cjs-modal-content {
+        width: 98%;
+        margin: 5% auto;
+    }
+    
+    .cjs-search-form {
+        flex-direction: column;
+        align-items: stretch;
+    }
+    
+    .cjs-orders-table,
+    .cjs-stones-table {
+        font-size: 12px;
+    }
+    
+    .cjs-orders-table th,
+    .cjs-orders-table td,
+    .cjs-stones-table th,
+    .cjs-stones-table td {
+        padding: 5px 3px;
+    }
+    
+    .cjs-inline-edit,
+    .cjs-inline-stone-edit {
+        max-width: 100px;
+    }
+    
+    /* UPDATED: Mobile size inputs */
+    .cjs-size-inputs {
+        flex-direction: column;
+        gap: 3px;
+    }
+    
+    .cjs-size-value,
+    .cjs-size-unit {
+        width: 100%;
+        min-width: auto;
+    }
+    
+    .cjs-form-row .cjs-size-flex {
+        flex-direction: column;
+        gap: 5px;
+    }
+    
+    .cjs-form-row .cjs-size-flex input,
+    .cjs-form-row .cjs-size-flex select {
+        width: 100%;
+    }
+    
+    .cjs-file-item {
+        flex-direction: column;
+        text-align: center;
+    }
+    
+    .cjs-file-preview {
+        margin-right: 0;
+        margin-bottom: 10px;
+    }
+    
+    .cjs-add-option {
+        flex-direction: column;
+        align-items: stretch;
+    }
+    
+    .cjs-single-form .form-table .cjs-size-container {
+        flex-direction: column;
+        gap: 5px;
+    }
+    
+    .cjs-single-form .form-table .cjs-size-container input,
+    .cjs-single-form .form-table .cjs-size-container select {
+        width: 100%;
+    }
+    
+    /* Mobile stone order edit modal adjustments */
+    #edit-stone-order-stones-list .stone-item {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 5px;
+    }
+    
+    #edit-stone-order-stones-list .stone-item span {
+        padding-right: 0;
+    }
+    
+    #edit-stone-order-stones-list .remove-stone {
+        align-self: flex-end;
+    }
+}
+
+/* HPOS Compatibility */
+.woocommerce_page_wc-orders .cjs-order-meta-box,
+.woocommerce_page_wc-orders .cjs-files-meta-box {
+    /* Ensure meta boxes work properly in HPOS */
+    max-width: 100%;
+}
+
+/* Loading States */
+.cjs-loading {
+    opacity: 0.6;
+    pointer-events: none;
+    position: relative;
+}
+
+.cjs-loading::after {
+    content: "";
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    width: 20px;
+    height: 20px;
+    margin: -10px 0 0 -10px;
+    border: 2px solid #f3f3f3;
+    border-top: 2px solid #007cba;
+    border-radius: 50%;
+    animation: cjs-spin 1s linear infinite;
+}
+
+@keyframes cjs-spin {
+    0% { transform: rotate(0deg); }
+    100% { transform: rotate(360deg); }
+}
+
+/* Success/Error Messages */
+.cjs-notice {
+    position: fixed;
+    top: 32px;
+    right: 20px;
+    z-index: 999999;
+    padding: 12px 20px;
+    border-radius: 4px;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.15);
+    font-weight: 600;
+    min-width: 300px;
+    animation: cjs-slide-in 0.3s ease-out;
+    cursor: pointer;
+}
+
+@keyframes cjs-slide-in {
+    from {
+        transform: translateX(100%);
+        opacity: 0;
+    }
+    to {
+        transform: translateX(0);
+        opacity: 1;
+    }
+}
+
+.cjs-notice-success {
+    background: #00a32a;
+    color: white;
+    border-left: 4px solid #007c20;
+}
+
+.cjs-notice-error {
+    background: #d63638;
+    color: white;
+    border-left: 4px solid #b32d2e;
+}
+
+.cjs-notice-warning {
+    background: #dba617;
+    color: white;
+    border-left: 4px solid #826200;
+}
+
+.cjs-notice-info {
+    background: #0073aa;
+    color: white;
+    border-left: 4px solid #005177;
+}
+
+/* Admin Bar Fix */
+.wp-admin #cjs-notice {
+    top: 32px;
+}
+
+/* Size Unit Specific Styles */
+.cjs-size-unit-indicator {
+    font-size: 10px;
+    color: #666;
+    font-weight: normal;
+    margin-left: 2px;
+}
+
+.cjs-size-display {
+    font-weight: 600;
+    color: #0073aa;
+}
+
+/* Updated form flex layouts for size inputs */
+.cjs-form-row .cjs-size-input-group {
+    display: flex;
+    gap: 10px;
+    align-items: center;
+}
+
+.cjs-form-row .cjs-size-input-group input {
+    flex: 2;
+    min-width: 80px;
+}
+
+.cjs-form-row .cjs-size-input-group select {
+    flex: 1;
+    min-width: 80px;
+}
+
+.cjs-size-help-text {
+    display: block;
+    margin-top: 5px;
+    font-size: 12px;
+    color: #666;
+    font-style: italic;
+}
+
+/* Utilities */
+.cjs-text-center { text-align: center; }
+.cjs-text-right { text-align: right; }
+.cjs-text-left { text-align: left; }
+
+.cjs-mb-0 { margin-bottom: 0; }
+.cjs-mb-10 { margin-bottom: 10px; }
+.cjs-mb-20 { margin-bottom: 20px; }
+
+.cjs-mt-0 { margin-top: 0; }
+.cjs-mt-10 { margin-top: 10px; }
+.cjs-mt-20 { margin-top: 20px; }
+
+/* Print Styles */
+@media print {
+    .cjs-modal,
+    .cjs-filters,
+    .cjs-form-actions,
+    .button,
+    .cjs-file-actions,
+    .cjs-notice {
+        display: none !important;
+    }
+    
+    .cjs-formatted-size {
+        font-weight: bold;
+        color: #000 !important;
+    }
+}
+
+/* Stone Assignment Modal */
+#cjs-stone-assignment-modal .cjs-modal-content {
+    max-width: 500px;
+}
+
+#assign-stone-info {
+    background: #f0f0f0;
+    padding: 10px;
+    border-radius: 5px;
+    margin-bottom: 15px;
+    border-left: 4px solid #0073aa;
+}
+
+/* Stone Order Creation with Stones */
+#stone-order-stones {
+    min-height: 200px;
+    font-family: monospace;
+}
+
+#stone-order-stones option {
+    padding: 5px;
+    border-bottom: 1px solid #eee;
+}
+
+/* Enhanced clickable stones */
+.cjs-clickable-stone {
+    cursor: pointer;
+    transition: all 0.2s ease;
+    user-select: none;
+}
+
+.cjs-clickable-stone:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    background-color: #e9ecef !important;
+    border-color: #0073aa !important;
+}
+
+.cjs-clickable-stone:active {
+    transform: translateY(0);
+}
+
+/* Stone assignment button improvements */
+.cjs-assign-stone-order {
+    background: #0073aa;
+    color: white;
+    border: none;
+    padding: 4px 8px;
+    border-radius: 3px;
+    font-size: 11px;
+    cursor: pointer;
+    transition: background 0.2s ease;
+}
+
+.cjs-assign-stone-order:hover {
+    background: #005177;
+    color: white;
+}
+
+/* Enhanced Stone Order Modal */
+#cjs-order-stones-info {
+    background: #e7f3ff;
+    border-left: 4px solid #0073aa;
+}
+
+#cjs-quick-select-buttons {
+    display: flex;
+    gap: 10px;
+    margin-top: 10px;
+}
+
+#cjs-quick-select-buttons .button {
+    font-size: 11px;
+    padding: 4px 8px;
+    height: auto;
+    line-height: 1.2;
+}
+
+/* Stone order stones select styling */
+#stone-order-stones {
+    font-family: monospace;
+    font-size: 12px;
+}
+
+#stone-order-stones optgroup {
+    font-weight: bold;
+    color: #0073aa;
+    background: #f0f0f0;
+}
+
+#stone-order-stones option {
+    padding: 3px 5px;
+    font-weight: normal;
+    color: #333;
+}
+
+#stone-order-stones option:checked {
+    background: #0073aa;
+    color: white;
+}
+
+/* Loading states for buttons */
+.cjs-loading-btn {
+    opacity: 0.6;
+    pointer-events: none;
+    position: relative;
+}
+
+.cjs-loading-btn::after {
+    content: "";
+    position: absolute;
+    top: 50%;
+    right: 8px;
+    width: 12px;
+    height: 12px;
+    margin-top: -6px;
+    border: 2px solid #f3f3f3;
+    border-top: 2px solid #007cba;
+    border-radius: 50%;
+    animation: cjs-spin 1s linear infinite;
+}
+
+/* NEW: Stone Order Edit Modal Enhancement */
+.cjs-form-actions .button:first-child {
+    margin-left: 0;
+}
+
+#edit-stone-order-number[readonly] {
+    background-color: #f5f5f5;
+    cursor: not-allowed;
+}
+
+/* Stone order edit form layout improvements */
+#cjs-stone-order-edit-form .cjs-form-row:last-of-type {
+    margin-bottom: 25px;
+}
+
+/* Better visual separation in the edit modal */
+#cjs-stone-order-edit-modal h2 {
+    border-bottom: 2px solid #0073aa;
+    padding-bottom: 10px;
+    margin-bottom: 25px;
+    color: #0073aa;
+}
+
+/* Improve the WhatsApp section visibility */
+#cjs-edit-whatsapp-message h3 {
+    margin-top: 0;
+    color: #0073aa;
+    border-bottom: 1px solid #0073aa;
+    padding-bottom: 5px;
+}
+
+/* Better button grouping in form actions */
+.cjs-form-actions {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 10px;
+    padding-top: 15px;
+    border-top: 1px solid #eee;
+}
+
+.cjs-form-actions .button-primary {
+    order: 1;
+}
+
+.cjs-form-actions .button:not(.button-primary) {
+    order: 2;
+}
+
+/* Ensure proper spacing in mobile */
+@media (max-width: 480px) {
+    .cjs-form-actions {
+        flex-direction: column;
+        align-items: stretch;
+    }
+    
+    .cjs-form-actions .button {
+        width: 100%;
+        text-align: center;
+        order: initial;
+    }
+}
+
+/* File Upload Progress */
+.cjs-upload-progress {
+    margin-top: 10px;
+    margin-bottom: 10px;
+}
+
+/* Simple Lightbox Styles */
+.cjs-thumbnail-preview {
+    transition: opacity 0.2s ease;
+}
+
+.cjs-thumbnail-preview:hover {
+    opacity: 0.8;
+}
+
+#cjs-simple-lightbox {
+    background-color: rgba(0, 0, 0, 0.9);
+    z-index: 100001;
+}
+
+#cjs-simple-lightbox .cjs-modal-content {
+    background: transparent;
+    border: none;
+    box-shadow: none;
+    position: relative;
+}
+
+#cjs-lightbox-image {
+    border-radius: 8px;
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
+}
+
+#cjs-simple-lightbox .cjs-modal-close {
+    color: white;
+    background: rgba(0, 0, 0, 0.5);
+    border-radius: 50%;
+    width: 40px;
+    height: 40px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 24px;
+    transition: background 0.2s ease;
+}
+
+#cjs-simple-lightbox .cjs-modal-close:hover {
+    background: rgba(0, 0, 0, 0.8);
+}
+
+/* Lightbox Zoom Controls */
+.cjs-lightbox-controls {
+    display: flex;
+    gap: 10px;
+    justify-content: center;
+    align-items: center;
+}
+
+.cjs-lightbox-controls .button {
+    min-width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    font-weight: bold;
+    font-size: 12px;
+    line-height: 1;
+    padding: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 1000;
+}
+
+#cjs-zoom-in {
+    background: #0073aa;
+    color: white;
+    border-color: #0073aa;
+}
+
+#cjs-zoom-out {
+    background: #0073aa;
+    color: white;
+    border-color: #0073aa;
+}
+
+#cjs-zoom-reset {
+    background: #6c757d;
+    color: white;
+    border-color: #6c757d;
+    min-width: 80px;
+    border-radius: 20px;
+}
+
+.cjs-lightbox-controls .button:hover {
+    opacity: 0.8;
+}
+
+/* Lightbox Image Zoom */
+#cjs-lightbox-image {
+    transition: transform 0.2s ease;
+    transform-origin: center center;
+    user-select: none;
+}
+
+.cjs-progress-bar {
+    background: #f0f0f0;
+    border: 1px solid #ddd;
+    height: 20px;
+    border-radius: 10px;
+    overflow: hidden;
+    position: relative;
+}
+
+.cjs-progress-fill {
+    background: #0073aa;
+    height: 100%;
+    width: 0%;
+    transition: width 0.3s ease;
+    border-radius: 10px;
+}
+
+.cjs-progress-text {
+    text-align: center;
+    margin-top: 5px;
+    font-size: 12px;
+    color: #666;
+}
+
+/* Animated stripes for processing state */
+.cjs-progress-fill.processing {
+    background-image: linear-gradient(
+        45deg,
+        rgba(255, 255, 255, .15) 25%,
+        transparent 25%,
+        transparent 50%,
+        rgba(255, 255, 255, .15) 50%,
+        rgba(255, 255, 255, .15) 75%,
+        transparent 75%,
+        transparent
+    );
+    background-size: 40px 40px;
+    animation: progress-bar-stripes 1s linear infinite;
+}
+
+@keyframes progress-bar-stripes {
+    from { background-position: 40px 0; }
+    to { background-position: 0 0; }
+}

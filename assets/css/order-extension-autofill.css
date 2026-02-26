@@ -1,0 +1,338 @@
+/**
+ * Fixed Apple-level polished AI typing animation styles
+ * Direct textarea animation with subtle shimmer
+ */
+
+/* Autofill button styling */
+.cjs-autofill-liejimas {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 24px;
+    height: 24px;
+    padding: 0;
+    margin-left: 5px;
+    background: #f0f0f1;
+    border: 1px solid #dcdcde;
+    border-radius: 3px;
+    cursor: pointer;
+    transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+    text-decoration: none;
+    vertical-align: middle;
+}
+
+.cjs-autofill-liejimas:hover {
+    background: #2271b1;
+    border-color: #2271b1;
+    color: #fff;
+    transform: scale(1.05);
+    box-shadow: 0 2px 8px rgba(34, 113, 177, 0.3);
+}
+
+.cjs-autofill-liejimas:active {
+    transform: scale(0.95);
+}
+
+.cjs-autofill-liejimas:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+    transform: none;
+}
+
+.cjs-autofill-liejimas svg {
+    transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+/* Smooth spinning animation */
+.cjs-autofill-liejimas .cjs-spinning {
+    animation: cjs-smooth-spin 1s cubic-bezier(0.4, 0, 0.2, 1) infinite;
+}
+
+@keyframes cjs-smooth-spin {
+    0% { transform: rotate(0deg); }
+    100% { transform: rotate(360deg); }
+}
+
+/* Main typing container - applied to textarea */
+.cjs-ai-typing-container {
+    position: relative;
+    border: 1px solid #e0e0e0 !important;
+    border-radius: 8px;
+    background: #ffffff;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+    transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+    line-height: 1.5;
+    min-height: 60px;
+    overflow: hidden;
+}
+
+/* Hide textarea text during animation */
+.cjs-hidden-text {
+    color: transparent !important;
+    text-shadow: none !important;
+    caret-color: transparent !important;
+}
+
+/* Much more subtle shimmer effect - single direction */
+.cjs-generating-shimmer {
+    background: linear-gradient(
+        90deg,
+        #ffffff 0%,
+        #ffffff 70%,
+        #f8f8f8 85%,
+        #f0f0f0 92%,
+        #ffffff 100%
+    );
+    background-size: 200% 100%;
+    animation: cjs-subtle-shimmer 3s ease-in-out infinite;
+}
+
+@keyframes cjs-subtle-shimmer {
+    0% {
+        background-position: 200% 0;
+    }
+    100% {
+        background-position: -200% 0;
+    }
+}
+
+/* Temporary text container for animation */
+.cjs-temp-text-container {
+    display: block;
+    word-wrap: break-word;
+    line-height: 1.4;
+    font-size: 13px;
+    color: #333;
+    padding: 2px 0;
+}
+
+/* Individual character animation */
+.cjs-char {
+    display: inline;
+    opacity: 0;
+    transform: translateY(4px);
+    transition: all 0.25s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+    will-change: opacity, transform;
+}
+
+.cjs-char-visible {
+    opacity: 1;
+    transform: translateY(0);
+}
+
+/* Completion glow effect */
+.cjs-completion-glow {
+    border-color: #28a745 !important;
+    background: linear-gradient(
+        45deg,
+        #ffffff 0%,
+        #f8fff8 50%,
+        #ffffff 100%
+    );
+    animation: cjs-completion-pulse 0.8s ease-out;
+}
+
+@keyframes cjs-completion-pulse {
+    0% {
+        box-shadow: 0 0 0 0 rgba(40, 167, 69, 0.4);
+    }
+    50% {
+        box-shadow: 0 0 0 6px rgba(40, 167, 69, 0.1);
+    }
+    100% {
+        box-shadow: 0 0 0 0 rgba(40, 167, 69, 0);
+    }
+}
+
+/* Enhanced, properly contained tooltips */
+.cjs-autofill-liejimas {
+    position: relative;
+}
+
+.cjs-autofill-liejimas::after {
+    content: attr(title);
+    position: absolute;
+    bottom: calc(100% + 10px);
+    left: 50%;
+    transform: translateX(-50%) scale(0.9);
+    padding: 8px 12px;
+    background: rgba(30, 30, 30, 0.95);
+    color: #fff;
+    font-size: 11px;
+    font-weight: 500;
+    white-space: nowrap;
+    border-radius: 6px;
+    pointer-events: none;
+    opacity: 0;
+    transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+    z-index: 1000;
+    backdrop-filter: blur(12px);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+    
+    /* Prevent overflow and ensure proper containment */
+    max-width: 200px;
+    word-wrap: break-word;
+    white-space: normal;
+    text-align: center;
+}
+
+.cjs-autofill-liejimas:hover::after {
+    opacity: 1;
+    transform: translateX(-50%) scale(1);
+}
+
+.cjs-autofill-liejimas::before {
+    content: '';
+    position: absolute;
+    bottom: calc(100% + 4px);
+    left: 50%;
+    transform: translateX(-50%) scale(0.9);
+    border: 4px solid transparent;
+    border-top-color: rgba(30, 30, 30, 0.95);
+    pointer-events: none;
+    opacity: 0;
+    transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+    z-index: 1001;
+}
+
+.cjs-autofill-liejimas:hover::before {
+    opacity: 1;
+    transform: translateX(-50%) scale(1);
+}
+
+/* Responsive tooltip positioning */
+@media screen and (max-width: 782px) {
+    .cjs-autofill-liejimas::after {
+        bottom: auto;
+        top: calc(100% + 10px);
+        max-width: 150px;
+        font-size: 10px;
+    }
+    
+    .cjs-autofill-liejimas::before {
+        bottom: auto;
+        top: calc(100% + 4px);
+        border-top-color: transparent;
+        border-bottom-color: rgba(30, 30, 30, 0.95);
+        transform: translateX(-50%) scale(0.9) rotate(180deg);
+    }
+    
+    .cjs-autofill-liejimas:hover::before {
+        transform: translateX(-50%) scale(1) rotate(180deg);
+    }
+}
+
+/* Notification styling */
+.cjs-autofill-notice {
+    margin: 10px 0;
+    animation: cjs-slide-down 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+@keyframes cjs-slide-down {
+    from {
+        opacity: 0;
+        transform: translateY(-20px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+/* High contrast mode support */
+@media (prefers-contrast: high) {
+    .cjs-ai-typing-container {
+        border-width: 2px;
+    }
+    
+    .cjs-generating-shimmer {
+        background: #ffffff;
+        animation: none;
+    }
+    
+    .cjs-char {
+        transition-duration: 0.1s;
+    }
+}
+
+/* Reduced motion support */
+@media (prefers-reduced-motion: reduce) {
+    .cjs-ai-typing-container,
+    .cjs-char,
+    .cjs-autofill-liejimas,
+    .cjs-autofill-liejimas svg {
+        animation: none;
+        transition: none;
+    }
+    
+    .cjs-generating-shimmer {
+        background: #f8f9ff;
+        animation: none;
+    }
+    
+    .cjs-char {
+        opacity: 1;
+        transform: none;
+    }
+    
+    .cjs-char-visible {
+        opacity: 1;
+        transform: none;
+    }
+    
+    .cjs-autofill-liejimas:hover {
+        transform: none;
+    }
+}
+
+/* Better responsive behavior */
+@media screen and (max-width: 782px) {
+    .cjs-autofill-liejimas {
+        width: 30px;
+        height: 30px;
+    }
+    
+    .cjs-ai-typing-container {
+        min-height: 50px;
+    }
+    
+    .cjs-temp-text-container {
+        font-size: 12px;
+    }
+}
+
+/* Additional CSS for auto-resize textareas */
+.cjs-small-textarea {
+    min-height: 24px;
+    overflow-y: hidden;
+    transition: height 0.2s ease;
+    box-sizing: border-box;
+    line-height: 1.4;
+    padding: 4px 6px;
+    border: 1px solid #ddd;
+    border-radius: 3px;
+    font-size: 13px;
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+}
+
+.cjs-small-textarea:focus {
+    outline: none;
+    border-color: #2271b1;
+    box-shadow: 0 0 0 1px rgba(34, 113, 177, 0.2);
+}
+
+/* Ensure table cells accommodate growing textareas */
+.cjs-orders-table td {
+    vertical-align: top;
+    padding: 8px 10px;
+}
+
+/* Prevent table layout issues during animation */
+.cjs-orders-table {
+    table-layout: fixed;
+}
+
+.cjs-orders-table .cjs-small-textarea {
+    width: 100%;
+}

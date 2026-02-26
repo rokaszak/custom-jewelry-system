@@ -1,0 +1,283 @@
+/**
+ * Frontend styles for Custom Jewelry System
+ */
+ .cjs-delivery-info-frontend {
+    margin: 0 0 40px 0;
+    padding: 32px 36px;
+    background: #ffffff;
+    border: 1px solid #e5e7eb;
+    border-radius: 8px;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+}
+
+/* Shipping Method */
+.cjs-shipping-method {
+    font-size: 1.6rem;
+    color: #6b7280;
+    margin-bottom: 12px;
+    font-weight: 500;
+}
+
+/* Status Title */
+.cjs-status-title {
+    font-size: 3rem;
+    font-weight: 600;
+    color: #111827;
+    margin: 0 0 16px 0;
+    line-height: 1.3;
+}
+
+/* Disclaimer Text */
+.cjs-delivery-disclaimer {
+    margin: 0 0 28px 0;
+    font-size: 1.6rem;
+    line-height: 1.6;
+    color: #6b7280;
+}
+
+.cjs-delivery-disclaimer strong {
+    color: #111827;
+    font-weight: 600;
+}
+
+/* Progress Container */
+.cjs-progress-container {
+    margin-top: 24px;
+    align-content: center;
+    align-items: center;
+    display: flex;
+    flex-direction: column;
+    width: 100%;
+}
+
+/* Progress Status Label - always green */
+.cjs-progress-status-label {
+    text-align: center;
+    font-weight: 500;
+    font-size: 1.625rem;
+    color: #10b981;
+    margin-bottom: 12px;
+}
+
+/* Progress Bar Wrapper with circles */
+.cjs-progress-bar-wrapper {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-bottom: 12px;
+    width: 100%;
+}
+
+/* Start, Middle and End Circles */
+.cjs-progress-circle {
+    width: 24px;
+    height: 24px;
+    border-radius: 50%;
+    flex-shrink: 0;
+    position: relative;
+}
+
+.cjs-progress-circle-start {
+    background: #10b981;
+}
+
+.cjs-progress-circle-middle {
+    background: #10b981;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.cjs-progress-circle-end {
+    background: #10b981;
+}
+
+/* Status text inside middle circle */
+.cjs-status-text {
+    font-size: 0.7rem;
+    font-weight: 600;
+    color: white;
+    text-align: center;
+    line-height: 1;
+    padding: 2px;
+    word-break: break-word;
+}
+
+/* Pulsing animation for middle circle */
+.cjs-pulsing {
+    animation: cjs-pulse 1.5s ease-in-out infinite;
+}
+
+@keyframes cjs-pulse {
+    0% {
+        transform: scale(1);
+        opacity: 1;
+    }
+    50% {
+        transform: scale(1.1);
+        opacity: 0.6;
+    }
+    100% {
+        transform: scale(1);
+        opacity: 1;
+    }
+}
+
+/* Progress Bars */
+.cjs-progress-bar {
+    flex: 1;
+    height: 8px;
+    background: #e5e7eb;
+    border-radius: 4px;
+    overflow: visible;
+    position: relative;
+}
+
+.cjs-progress-bar-first .cjs-progress-fill {
+    width: 100% !important;
+}
+
+.cjs-progress-bar-first.cjs-not-started .cjs-progress-fill {
+    background: #d1d5db;
+}
+
+.cjs-progress-circle-middle.cjs-not-started {
+    background: #d1d5db;
+}
+
+.cjs-progress-circle-middle.cjs-completed {
+    background: #10b981;
+}
+
+.cjs-progress-circle-end.cjs-not-started {
+    background: #d1d5db;
+}
+
+.cjs-progress-circle-end.cjs-in-progress {
+    background: #d1d5db;
+}
+
+.cjs-progress-circle-end.cjs-completed {
+    background: #10b981;
+}
+
+.cjs-progress-fill {
+    height: 100%;
+    border-radius: 4px;
+    background: #10b981;
+    transition: width 0.3s ease;
+}
+
+/* Progress Labels */
+.cjs-progress-labels {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    width: 100%;
+    position: relative;
+}
+
+.cjs-progress-label-item {
+    display: flex;
+    flex-direction: column;
+    position: relative;
+}
+
+.cjs-progress-label-item.left {
+    align-items: flex-start;
+    margin-left: 0;
+}
+
+.cjs-progress-label-item.center {
+    align-items: center;
+    position: absolute;
+    left: 50%;
+    transform: translateX(-50%);
+}
+
+.cjs-progress-label-item.right {
+    align-items: flex-end;
+    margin-left: auto;
+}
+
+.cjs-progress-label {
+    font-size: 1.6rem;
+    font-weight: 600;
+    color: #111827;
+    margin-bottom: 2px;
+}
+
+.cjs-progress-date {
+    font-size: 1.25rem;
+    color: #6b7280;
+}
+
+.cjs-delivery-disclaimers-disclaimer{
+    font-size: 1.25rem;
+}
+
+/* Responsive adjustments */
+@media (max-width: 768px) {
+    .cjs-delivery-info-frontend {
+        margin: 0 0 30px 0;
+        padding: 24px 20px;
+    }
+    
+    .cjs-status-title {
+        font-size: 1.625rem;
+    }
+    
+    .cjs-delivery-disclaimer {
+        font-size: 1.25rem;
+        margin-bottom: 24px;
+    }
+    
+    .cjs-progress-container {
+        margin-top: 24px;
+        align-content: center;
+        align-items: center;
+        display: flex;
+        flex-direction: column;
+        width: 100%;
+    }
+    
+    .cjs-progress-status-label {
+        font-size: 1.6rem;
+    }
+    
+    .cjs-progress-circle {
+        width: 20px;
+        height: 20px;
+    }
+    
+    .cjs-status-text {
+        font-size: 0.6rem;
+    }
+    
+    .cjs-progress-bar {
+        height: 6px;
+    }
+}
+
+@media (max-width: 480px) {
+    .cjs-delivery-info-frontend {
+        padding: 20px 16px;
+    }
+    
+    .cjs-status-title {
+        font-size: 1.6rem;
+    }
+    
+    .cjs-progress-circle {
+        width: 16px;
+        height: 16px;
+    }
+    
+    .cjs-status-text {
+        font-size: 0.5rem;
+    }
+    
+    .cjs-progress-bar {
+        height: 6px;
+    }
+}
