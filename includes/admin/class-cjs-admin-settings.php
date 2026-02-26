@@ -91,6 +91,11 @@ class CJS_Admin_Settings {
                 'label' => __('Manufacturing Statuses', 'custom-jewelry-system'),
                 'format' => 'array',
                 'sortable' => true
+            ],
+            'order_types' => [
+                'label' => __('Order Types', 'custom-jewelry-system'),
+                'format' => 'array',
+                'sortable' => true
             ]
         ];
         ?>
@@ -105,8 +110,7 @@ class CJS_Admin_Settings {
                          <?php endif; ?>>
                         <?php
                         if (isset($option_info['sortable']) && $option_info['sortable']) {
-                            // Get ordered options from the database
-                            $options = self::get_ordered_options($option_key);
+                            $options = CJS_Order_Extension::get_ordered_options($option_key);
                         } else {
                             $options = get_option('cjs_' . $option_key, []);
                         }
@@ -168,50 +172,6 @@ class CJS_Admin_Settings {
     }
     
     /**
-     * Get ordered options from database
-     */
-    private static function get_ordered_options($option_type) {
-        global $wpdb;
-        
-        $table_name = $wpdb->prefix . 'cjs_options_sort_order';
-        $results = $wpdb->get_results(
-            $wpdb->prepare(
-                "SELECT option_value FROM {$table_name} WHERE option_type = %s ORDER BY sort_order ASC",
-                $option_type
-            ),
-            ARRAY_A
-        );
-        
-        if (empty($results)) {
-            // Fallback to option if table is empty
-            return get_option('cjs_' . $option_type, []);
-        }
-        
-        $ordered_values = array_column($results, 'option_value');
-        
-        // For key-value pairs, we need to reconstruct the original structure
-        $original_options = get_option('cjs_' . $option_type, []);
-        
-        if (is_array($original_options) && !empty($original_options)) {
-            // Check if this is a key-value array (associative array)
-            $is_key_value = array_keys($original_options) !== range(0, count($original_options) - 1);
-            
-            if ($is_key_value) {
-                // Reconstruct key-value pairs in the new order
-                $reordered_options = [];
-                foreach ($ordered_values as $value) {
-                    if (isset($original_options[$value])) {
-                        $reordered_options[$value] = $original_options[$value];
-                    }
-                }
-                return $reordered_options;
-            }
-        }
-        
-        return $ordered_values;
-    }
-    
-    /**
      * Render single option item
      */
     private static function render_option_item($value, $label, $option_type) {
@@ -219,7 +179,7 @@ class CJS_Admin_Settings {
         $option_types = [
             'stone_types', 'stone_origins', 'stone_shapes', 'stone_colors',
             'stone_settings', 'stone_clarities', 'stone_cut_grades',
-            'origin_countries', 'manufacturing_statuses'
+            'origin_countries', 'manufacturing_statuses', 'order_types'
         ];
         $is_sortable = in_array($option_type, $option_types);
         ?>
@@ -267,7 +227,7 @@ class CJS_Admin_Settings {
                     <input type="hidden" name="tab" value="log" />
                     
                     <input type="text" name="log_search" value="<?php echo esc_attr($search); ?>" 
-                           placeholder="<?php esc_attr_e('Search logs...', 'custom-jewelry-system'); ?>" />
+                           placeholder="<?php esc_attr_e('Search by type (order number)...', 'custom-jewelry-system'); ?>" />
                     
                     <select name="severity">
                         <option value=""><?php _e('All Severities', 'custom-jewelry-system'); ?></option>

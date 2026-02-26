@@ -116,10 +116,29 @@ class CJS_Logger {
         }
         
         if ($args['search']) {
-            $where[] = '(action LIKE %s OR details LIKE %s)';
-            $search_term = '%' . $wpdb->esc_like($args['search']) . '%';
-            $values[] = $search_term;
-            $values[] = $search_term;
+            $search = trim(str_replace('#', ' ', $args['search']));
+            $type_part = '';
+            $id_part = null;
+            if (preg_match('/\d+/', $search, $m)) {
+                $id_part = (int) $m[0];
+                $type_part = trim(preg_replace('/#?\d+/', '', $search));
+            } else {
+                $type_part = $search;
+            }
+            $search_conditions = [];
+            if ($type_part !== '') {
+                $search_conditions[] = 'object_type LIKE %s';
+                $values[] = '%' . $wpdb->esc_like($type_part) . '%';
+            }
+            if ($id_part !== null) {
+                $id_like = '%' . $wpdb->esc_like((string) $id_part) . '%';
+                $search_conditions[] = '(object_id = %d OR CAST(object_id AS CHAR) LIKE %s)';
+                $values[] = $id_part;
+                $values[] = $id_like;
+            }
+            if (!empty($search_conditions)) {
+                $where[] = '(' . implode(' AND ', $search_conditions) . ')';
+            }
         }
         
         $where_clause = implode(' AND ', $where);

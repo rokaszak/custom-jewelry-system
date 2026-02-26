@@ -432,7 +432,7 @@ class CJS_REST_API {
         $field = sanitize_text_field($_POST['field']);
         $value = $_POST['value'];
         
-        $valid_fields = ['finish_by_date', 'deliver_by_date', 'order_model', 'order_production', 'casting_notes', 'order_printing', 'manufacturing_status'];
+        $valid_fields = ['finish_by_date', 'deliver_by_date', 'order_model', 'order_production', 'casting_notes', 'order_printing', 'manufacturing_status', 'order_type'];
         if (!in_array($field, $valid_fields)) {
             wp_send_json_error(['message' => 'Invalid field']);
             return;
@@ -983,7 +983,7 @@ class CJS_REST_API {
         $valid_types = [
             'stone_types', 'stone_origins', 'stone_shapes', 'stone_colors',
             'stone_settings', 'stone_clarities', 'stone_cut_grades',
-            'origin_countries', 'manufacturing_statuses', 'stone_size_units'
+            'origin_countries', 'manufacturing_statuses', 'order_types', 'stone_size_units'
         ];
         
         if (!in_array($option_type, $valid_types)) {
@@ -999,7 +999,7 @@ class CJS_REST_API {
         $options = get_option('cjs_' . $option_type, []);
         
         // Handle different option formats
-        if (in_array($option_type, ['stone_shapes', 'stone_clarities', 'stone_cut_grades', 'origin_countries', 'manufacturing_statuses'])) {
+        if (in_array($option_type, ['stone_shapes', 'stone_clarities', 'stone_cut_grades', 'origin_countries', 'manufacturing_statuses', 'order_types'])) {
             // Simple array
             if (!in_array($value, $options)) {
                 $options[] = $value;
@@ -1015,29 +1015,57 @@ class CJS_REST_API {
         $sortable_options = [
             'stone_types', 'stone_origins', 'stone_shapes', 'stone_colors',
             'stone_settings', 'stone_clarities', 'stone_cut_grades',
-            'origin_countries', 'manufacturing_statuses'
+            'origin_countries', 'manufacturing_statuses', 'order_types'
         ];
         
         if (in_array($option_type, $sortable_options)) {
             global $wpdb;
             $table_name = $wpdb->prefix . 'cjs_options_sort_order';
             
-            // Get the highest sort order for this option type
-            $max_order = $wpdb->get_var($wpdb->prepare(
-                "SELECT MAX(sort_order) FROM {$table_name} WHERE option_type = %s",
-                $option_type
-            ));
-            $new_order = $max_order !== null ? intval($max_order) + 1 : 0;
-            
-            $wpdb->insert(
-                $table_name,
-                [
-                    'option_type' => $option_type,
-                    'option_value' => $value,
-                    'sort_order' => $new_order
-                ],
-                ['%s', '%s', '%d']
-            );
+            $array_format_types = ['stone_shapes', 'stone_clarities', 'stone_cut_grades', 'origin_countries', 'manufacturing_statuses', 'order_types'];
+            if (in_array($option_type, $array_format_types)) {
+                // Sync sort table: ensure every value in $options has a row (so defaults are not lost)
+                $max_order = $wpdb->get_var($wpdb->prepare(
+                    "SELECT MAX(sort_order) FROM {$table_name} WHERE option_type = %s",
+                    $option_type
+                ));
+                $next_order = $max_order !== null ? intval($max_order) + 1 : 0;
+                foreach ($options as $opt_value) {
+                    $exists = $wpdb->get_var($wpdb->prepare(
+                        "SELECT id FROM {$table_name} WHERE option_type = %s AND option_value = %s",
+                        $option_type,
+                        $opt_value
+                    ));
+                    if (!$exists) {
+                        $wpdb->insert(
+                            $table_name,
+                            [
+                                'option_type' => $option_type,
+                                'option_value' => $opt_value,
+                                'sort_order' => $next_order
+                            ],
+                            ['%s', '%s', '%d']
+                        );
+                        $next_order++;
+                    }
+                }
+            } else {
+                // Key-value: only insert the new value
+                $max_order = $wpdb->get_var($wpdb->prepare(
+                    "SELECT MAX(sort_order) FROM {$table_name} WHERE option_type = %s",
+                    $option_type
+                ));
+                $new_order = $max_order !== null ? intval($max_order) + 1 : 0;
+                $wpdb->insert(
+                    $table_name,
+                    [
+                        'option_type' => $option_type,
+                        'option_value' => $value,
+                        'sort_order' => $new_order
+                    ],
+                    ['%s', '%s', '%d']
+                );
+            }
         }
         
         CJS_Logger::log("Option added to {$option_type}", 'info', 'settings', null, ['value' => $value, 'label' => $label]);
@@ -1062,7 +1090,7 @@ class CJS_REST_API {
         $valid_types = [
             'stone_types', 'stone_origins', 'stone_shapes', 'stone_colors',
             'stone_settings', 'stone_clarities', 'stone_cut_grades',
-            'origin_countries', 'manufacturing_statuses', 'stone_size_units'
+            'origin_countries', 'manufacturing_statuses', 'order_types', 'stone_size_units'
         ];
         
         if (!in_array($option_type, $valid_types)) {
@@ -1073,7 +1101,7 @@ class CJS_REST_API {
         $options = get_option('cjs_' . $option_type, []);
         
         // Handle different option formats
-        if (in_array($option_type, ['stone_shapes', 'stone_clarities', 'stone_cut_grades', 'origin_countries', 'manufacturing_statuses'])) {
+        if (in_array($option_type, ['stone_shapes', 'stone_clarities', 'stone_cut_grades', 'origin_countries', 'manufacturing_statuses', 'order_types'])) {
             // Simple array
             $options = array_diff($options, [$value]);
             $options = array_values($options); // Re-index
@@ -1088,7 +1116,7 @@ class CJS_REST_API {
         $sortable_options = [
             'stone_types', 'stone_origins', 'stone_shapes', 'stone_colors',
             'stone_settings', 'stone_clarities', 'stone_cut_grades',
-            'origin_countries', 'manufacturing_statuses'
+            'origin_countries', 'manufacturing_statuses', 'order_types'
         ];
         
         if (in_array($option_type, $sortable_options)) {
@@ -1301,7 +1329,7 @@ class CJS_REST_API {
         $valid_types = [
             'stone_types', 'stone_origins', 'stone_shapes', 'stone_colors',
             'stone_settings', 'stone_clarities', 'stone_cut_grades',
-            'origin_countries', 'manufacturing_statuses'
+            'origin_countries', 'manufacturing_statuses', 'order_types'
         ];
         
         if (!in_array($option_type, $valid_types)) {

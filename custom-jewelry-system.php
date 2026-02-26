@@ -3,7 +3,7 @@
  * Plugin Name: Custom Jewelry System
  * Plugin URI: https://Proven.lt/
  * Description: Advanced order management and stone tracking system for jewelers
- * Version: 1.2.0
+ * Version: 1.3.5
  * Author: Rokas Zakarauskas
  * Text Domain: custom-jewelry-system
  * Domain Path: /languages
@@ -19,7 +19,7 @@ if (!defined('ABSPATH')) {
 }
 
 // Define plugin constants
-define('CJS_VERSION', '1.0.0');
+define('CJS_VERSION', '1.3.5');
 define('CJS_PLUGIN_DIR', plugin_dir_path(__FILE__));
 define('CJS_PLUGIN_URL', plugin_dir_url(__FILE__));
 define('CJS_PLUGIN_BASENAME', plugin_basename(__FILE__));
@@ -106,7 +106,8 @@ class CustomJewelrySystem {
             return;
         }
         
-        // Check database integrity
+        // Run migrations when plugin is updated (version bump); then check integrity
+        CJS_Install::maybe_upgrade();
         $this->check_database_integrity();
         
         // Load text domain

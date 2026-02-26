@@ -18,6 +18,9 @@ class CJS_Admin_Orders {
         // Get filters
         $search = isset($_GET['s']) ? sanitize_text_field($_GET['s']) : '';
         $status_filter = isset($_GET['status']) ? sanitize_text_field($_GET['status']) : '';
+        $order_model_filter = isset($_GET['order_model']) ? sanitize_text_field($_GET['order_model']) : '';
+        $order_production_filter = isset($_GET['order_production']) ? sanitize_text_field($_GET['order_production']) : '';
+        $order_type_filter = isset($_GET['order_type']) ? sanitize_text_field($_GET['order_type']) : '';
         $page = isset($_GET['paged']) ? max(1, intval($_GET['paged'])) : 1;
         $per_page = 20;
         
@@ -44,6 +47,30 @@ class CJS_Admin_Orders {
                         }
                         ?>
                     </select>
+                    <select name="order_model">
+                        <option value=""><?php _e('Any model option', 'custom-jewelry-system'); ?></option>
+                        <option value="1" <?php selected($order_model_filter, '1'); ?>><?php _e('Model Ordered', 'custom-jewelry-system'); ?></option>
+                        <option value="0" <?php selected($order_model_filter, '0'); ?>><?php _e('Model Not Ordered', 'custom-jewelry-system'); ?></option>
+                    </select>
+                    <select name="order_production">
+                        <option value=""><?php _e('Any production option', 'custom-jewelry-system'); ?></option>
+                        <option value="1" <?php selected($order_production_filter, '1'); ?>><?php _e('Production Ordered', 'custom-jewelry-system'); ?></option>
+                        <option value="0" <?php selected($order_production_filter, '0'); ?>><?php _e('Production Not Ordered', 'custom-jewelry-system'); ?></option>
+                    </select>
+                    <select name="order_type">
+                        <option value=""><?php _e('All order types', 'custom-jewelry-system'); ?></option>
+                        <?php
+                        $order_types = CJS_Order_Extension::get_ordered_options('order_types');
+                        foreach ($order_types as $type) {
+                            printf(
+                                '<option value="%s" %s>%s</option>',
+                                esc_attr($type),
+                                selected($order_type_filter, $type, false),
+                                esc_html($type)
+                            );
+                        }
+                        ?>
+                    </select>
                     <button type="submit" class="button"><?php _e('Filter', 'custom-jewelry-system'); ?></button>
                 </form>
             </div>
@@ -62,16 +89,17 @@ class CJS_Admin_Orders {
                         <th><?php _e('Reikalingi akmenys', 'custom-jewelry-system'); ?></th>
                         <th><?php _e('Akmenų užsakymas', 'custom-jewelry-system'); ?></th>
                         <th><?php _e('Statusas', 'custom-jewelry-system'); ?></th>
+                        <th><?php _e('Užsakymo tipas', 'custom-jewelry-system'); ?></th>
                         <th><?php _e('Spauda', 'custom-jewelry-system'); ?></th>
                         <th><?php _e('Actions', 'custom-jewelry-system'); ?></th>
                     </tr>
                 </thead>
                 <tbody>
                     <?php
-                    $orders = self::get_orders($page, $per_page, $search, $status_filter);
+                    $orders = self::get_orders($page, $per_page, $search, $status_filter, $order_model_filter, $order_production_filter, $order_type_filter);
                     
                     if (empty($orders['items'])) {
-                        echo '<tr><td colspan="12">' . __('No orders found', 'custom-jewelry-system') . '</td></tr>';
+                        echo '<tr><td colspan="14">' . __('No orders found', 'custom-jewelry-system') . '</td></tr>';
                     } else {
                         foreach ($orders['items'] as $order_data) {
                             self::render_order_row($order_data);
@@ -109,7 +137,7 @@ class CJS_Admin_Orders {
     /**
      * Get orders with extended data (HPOS Compatible) - FIXED to exclude completed orders
      */
-    private static function get_orders($page, $per_page, $search = '', $status_filter = '') {
+    private static function get_orders($page, $per_page, $search = '', $status_filter = '', $order_model_filter = '', $order_production_filter = '', $order_type_filter = '') {
         global $wpdb;
         
         $offset = ($page - 1) * $per_page;
@@ -189,6 +217,42 @@ class CJS_Admin_Orders {
             foreach ($all_order_ids as $order_id) {
                 $ext_data = CJS_Order_Extension::get_order_extension($order_id);
                 if ($ext_data['manufacturing_status'] === $status_filter) {
+                    $filtered_ids[] = $order_id;
+                }
+            }
+            $all_order_ids = $filtered_ids;
+        }
+
+        // Filter by order_model if provided
+        if ($order_model_filter !== '') {
+            $filtered_ids = [];
+            foreach ($all_order_ids as $order_id) {
+                $ext_data = CJS_Order_Extension::get_order_extension($order_id);
+                if ((int) $ext_data['order_model'] === (int) $order_model_filter) {
+                    $filtered_ids[] = $order_id;
+                }
+            }
+            $all_order_ids = $filtered_ids;
+        }
+
+        // Filter by order_production if provided
+        if ($order_production_filter !== '') {
+            $filtered_ids = [];
+            foreach ($all_order_ids as $order_id) {
+                $ext_data = CJS_Order_Extension::get_order_extension($order_id);
+                if ((int) $ext_data['order_production'] === (int) $order_production_filter) {
+                    $filtered_ids[] = $order_id;
+                }
+            }
+            $all_order_ids = $filtered_ids;
+        }
+
+        // Filter by order_type if provided
+        if ($order_type_filter !== '') {
+            $filtered_ids = [];
+            foreach ($all_order_ids as $order_id) {
+                $ext_data = CJS_Order_Extension::get_order_extension($order_id);
+                if (($ext_data['order_type'] ?? 'Įprastas') === $order_type_filter) {
                     $filtered_ids[] = $order_id;
                 }
             }
@@ -446,6 +510,23 @@ class CJS_Admin_Orders {
                             esc_attr($status),
                             selected($ext->manufacturing_status, $status, false),
                             esc_html($status)
+                        );
+                    }
+                    ?>
+                </select>
+            </td>
+            <td>
+                <select class="cjs-inline-edit"
+                        data-field="order_type"
+                        data-order-id="<?php echo esc_attr($order_id); ?>">
+                    <?php
+                    $order_types = CJS_Order_Extension::get_ordered_options('order_types');
+                    foreach ($order_types as $type) {
+                        printf(
+                            '<option value="%s" %s>%s</option>',
+                            esc_attr($type),
+                            selected($ext->order_type ?? 'Įprastas', $type, false),
+                            esc_html($type)
                         );
                     }
                     ?>

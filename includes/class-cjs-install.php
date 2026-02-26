@@ -111,6 +111,7 @@ class CJS_Install {
             casting_notes text,
             order_printing tinyint(1) DEFAULT 0,
             manufacturing_status varchar(100) DEFAULT NULL,
+            order_type varchar(100) DEFAULT 'Įprastas',
             created_at datetime DEFAULT CURRENT_TIMESTAMP,
             updated_at datetime DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
             PRIMARY KEY (id),
@@ -192,6 +193,10 @@ class CJS_Install {
             if (!in_array('order_production', $columns)) {
                 $wpdb->query("ALTER TABLE {$wpdb->prefix}cjs_order_extensions ADD COLUMN order_production tinyint(1) DEFAULT 0 AFTER order_model");
                 error_log("CJS: Added order_production column to existing table");
+            }
+            if (!in_array('order_type', $columns)) {
+                $wpdb->query("ALTER TABLE {$wpdb->prefix}cjs_order_extensions ADD COLUMN order_type varchar(100) DEFAULT 'Įprastas' AFTER manufacturing_status");
+                error_log("CJS: Added order_type column to existing table");
             }
         }
         
@@ -353,6 +358,10 @@ class CJS_Install {
                 'Užprabuoti',
                 'DONE'
             ],
+            'order_types' => [
+                'Įprastas',
+                'Vestuvinis'
+            ],
             'stone_order_statuses' => [
                 'ideta_i_krepseli' => ['label' => 'Įdėta į krepšelį', 'color' => '#bd0000'],
                 'reikia_apmoketi' => ['label' => 'Reikia apmokėti', 'color' => '#dc3545'],
@@ -379,6 +388,23 @@ class CJS_Install {
         update_option('cjs_db_version', CJS_VERSION);
     }
     
+    /**
+     * Run database migrations if plugin was updated (stored DB version < current version).
+     * Called on init so updates get migrations without requiring reactivation.
+     */
+    public static function maybe_upgrade() {
+        $stored_version = get_option('cjs_db_version', '0');
+        if (version_compare($stored_version, CJS_VERSION, '>=')) {
+            return;
+        }
+        if (!current_user_can('manage_options')) {
+            return;
+        }
+        error_log('CJS: Plugin version changed from ' . $stored_version . ' to ' . CJS_VERSION . ', running migrations.');
+        self::create_tables();
+        self::create_default_options();
+    }
+
     /**
      * Deactivation cleanup
      */

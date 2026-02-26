@@ -157,6 +157,23 @@ class CJS_Order_Extension {
             </p>
 
             <p>
+                <label for="cjs_order_type"><?php _e('Užsakymo tipas', 'custom-jewelry-system'); ?></label>
+                <select id="cjs_order_type" name="cjs_order_type" style="width: 100%;">
+                    <?php
+                    $order_types = self::get_ordered_options('order_types');
+                    foreach ($order_types as $type) {
+                        printf(
+                            '<option value="%s" %s>%s</option>',
+                            esc_attr($type),
+                            selected($data['order_type'] ?? 'Įprastas', $type, false),
+                            esc_html($type)
+                        );
+                    }
+                    ?>
+                </select>
+            </p>
+
+            <p>
                 <label for="cjs_order_printing">
                     <input type="checkbox" id="cjs_order_printing" name="cjs_order_printing" 
                         value="1" <?php checked($data['order_printing'] ?? 0, 1); ?> />
@@ -484,7 +501,8 @@ class CJS_Order_Extension {
             'order_production' => isset($_POST['cjs_order_production']) ? 1 : 0,
             'casting_notes' => sanitize_textarea_field($_POST['cjs_casting_notes'] ?? ''),
             'order_printing' => isset($_POST['cjs_order_printing']) ? 1 : 0,
-            'manufacturing_status' => sanitize_text_field($_POST['cjs_manufacturing_status'] ?? '')
+            'manufacturing_status' => sanitize_text_field($_POST['cjs_manufacturing_status'] ?? ''),
+            'order_type' => sanitize_text_field($_POST['cjs_order_type'] ?? 'Įprastas')
         ];
         
         self::update_order_extension($order_id, $data);
@@ -511,7 +529,8 @@ class CJS_Order_Extension {
                 'order_production' => 0,
                 'casting_notes' => '',
                 'order_printing' => 0,
-                'manufacturing_status' => ''
+                'manufacturing_status' => '',
+                'order_type' => 'Įprastas'
             ];
         }
         
@@ -530,7 +549,7 @@ class CJS_Order_Extension {
         // If dates are empty, null, or invalid (0000-00-00), set defaults
         if (empty($finish_by_date) || $finish_by_date === '0000-00-00' || $finish_by_date === 'null') {
             $finish_date = clone $order_date;
-            $finish_date->add(new DateInterval('P8W'));
+            $finish_date->add(new DateInterval('P10W'));
             $finish_by_date = $finish_date->format('Y-m-d');
             
             // Update the database with the default date
@@ -539,7 +558,7 @@ class CJS_Order_Extension {
         
         if (empty($deliver_by_date) || $deliver_by_date === '0000-00-00' || $deliver_by_date === 'null') {
             $deliver_date = clone $order_date;
-            $deliver_date->add(new DateInterval('P10W'));
+            $deliver_date->add(new DateInterval('P12W'));
             $deliver_by_date = $deliver_date->format('Y-m-d');
             
             // Update the database with the default date
@@ -554,7 +573,8 @@ class CJS_Order_Extension {
             'order_production' => $data['order_production'] ?? 0,
             'casting_notes' => $data['casting_notes'] ?? '',
             'order_printing' => $data['order_printing'] ?? 0,
-            'manufacturing_status' => $data['manufacturing_status'] ?? ''
+            'manufacturing_status' => $data['manufacturing_status'] ?? '',
+            'order_type' => $data['order_type'] ?? 'Įprastas'
         ];
     }
     
@@ -583,12 +603,12 @@ class CJS_Order_Extension {
                 $order_date = new DateTime();
             }
             
-            // Calculate default dates: 8 weeks for finish, 10 weeks for deliver
+            // Calculate default dates: 10 weeks for finish, 12 weeks for deliver
             $finish_date = clone $order_date;
-            $finish_date->add(new DateInterval('P8W'));
+            $finish_date->add(new DateInterval('P10W'));
             
             $deliver_date = clone $order_date;
-            $deliver_date->add(new DateInterval('P10W'));
+            $deliver_date->add(new DateInterval('P12W'));
             
             $result = $wpdb->insert(
                 $wpdb->prefix . 'cjs_order_extensions',
@@ -596,10 +616,11 @@ class CJS_Order_Extension {
                     'order_id' => $order_id,
                     'finish_by_date' => $finish_date->format('Y-m-d'),
                     'deliver_by_date' => $deliver_date->format('Y-m-d'),
+                    'order_type' => 'Įprastas',
                     'created_at' => current_time('mysql'),
                     'updated_at' => current_time('mysql')
                 ],
-                ['%d', '%s', '%s', '%s', '%s']
+                ['%d', '%s', '%s', '%s', '%s', '%s']
             );
             
             if ($result === false) {
@@ -704,6 +725,7 @@ class CJS_Order_Extension {
                 $new_columns['cjs_finish_by'] = __('Užprabuoti iki', 'custom-jewelry-system');
                 $new_columns['cjs_deliver_by'] = __('Pristatyti iki', 'custom-jewelry-system');
                 $new_columns['cjs_manufacturing_status'] = __('Gamybos statusas', 'custom-jewelry-system');
+                $new_columns['cjs_order_type'] = __('Užsakymo tipas', 'custom-jewelry-system');
             }
         }
         
@@ -742,6 +764,10 @@ class CJS_Order_Extension {
             case 'cjs_manufacturing_status':
                 echo esc_html($data['manufacturing_status']);
                 break;
+
+            case 'cjs_order_type':
+                echo esc_html($data['order_type']);
+                break;
         }
     }
     
@@ -774,10 +800,16 @@ class CJS_Order_Extension {
     }
     
     /**
-     * Get ordered options from database
+     * Get ordered options from database.
+     * Merges sort-order table with full option list so defaults (only in wp_options) are never dropped.
      */
     public static function get_ordered_options($option_type) {
         global $wpdb;
+        
+        $from_option = get_option('cjs_' . $option_type, []);
+        if (!is_array($from_option)) {
+            return [];
+        }
         
         $table_name = $wpdb->prefix . 'cjs_options_sort_order';
         $results = $wpdb->get_results(
@@ -789,11 +821,35 @@ class CJS_Order_Extension {
         );
         
         if (empty($results)) {
-            // Fallback to option if table is empty
-            return get_option('cjs_' . $option_type, []);
+            return $from_option;
         }
         
-        return array_column($results, 'option_value');
+        $ordered = array_column($results, 'option_value');
+        $is_key_value = !empty($from_option) && array_keys($from_option) !== range(0, count($from_option) - 1);
+        
+        if ($is_key_value) {
+            $option_keys = array_keys($from_option);
+            $merged_keys = $ordered;
+            foreach ($option_keys as $key) {
+                if (!in_array($key, $merged_keys, true)) {
+                    $merged_keys[] = $key;
+                }
+            }
+            $reordered = [];
+            foreach ($merged_keys as $key) {
+                if (isset($from_option[$key])) {
+                    $reordered[$key] = $from_option[$key];
+                }
+            }
+            return $reordered;
+        }
+        
+        foreach ($from_option as $val) {
+            if (!in_array($val, $ordered, true)) {
+                $ordered[] = $val;
+            }
+        }
+        return $ordered;
     }
     
     /**
