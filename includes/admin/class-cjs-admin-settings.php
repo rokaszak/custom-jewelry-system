@@ -23,6 +23,10 @@ class CJS_Admin_Settings {
                    class="nav-tab <?php echo $active_tab === 'options' ? 'nav-tab-active' : ''; ?>">
                     <?php _e('Dropdown Options', 'custom-jewelry-system'); ?>
                 </a>
+                <a href="?page=cjs-settings&tab=size_kit" 
+                   class="nav-tab <?php echo $active_tab === 'size_kit' ? 'nav-tab-active' : ''; ?>">
+                    <?php _e('Size Kit', 'custom-jewelry-system'); ?>
+                </a>
                 <a href="?page=cjs-settings&tab=log" 
                    class="nav-tab <?php echo $active_tab === 'log' ? 'nav-tab-active' : ''; ?>">
                     <?php _e('Activity Log', 'custom-jewelry-system'); ?>
@@ -33,6 +37,8 @@ class CJS_Admin_Settings {
                 <?php
                 if ($active_tab === 'options') {
                     self::render_options_tab();
+                } elseif ($active_tab === 'size_kit') {
+                    self::render_size_kit_tab();
                 } else {
                     self::render_log_tab();
                 }
@@ -167,6 +173,79 @@ class CJS_Admin_Settings {
                     <?php _e('Default statuses cannot be deleted.', 'custom-jewelry-system'); ?>
                 </p>
             </div>
+        </div>
+        <?php
+    }
+
+    /**
+     * Render Size Kit settings tab
+     */
+    private static function render_size_kit_tab() {
+        $enabled = (bool) get_option('cjs_size_kit_enabled', false);
+        $categories = get_option('cjs_size_kit_categories', []);
+        if (!is_array($categories)) {
+            $categories = [];
+        }
+        $modal_text = get_option('cjs_size_kit_modal_text', __('Missing Text, Check Settings to add', 'custom-jewelry-system'));
+
+        $product_cats = get_terms([
+            'taxonomy'   => 'product_cat',
+            'hide_empty' => false,
+            'orderby'   => 'name',
+        ]);
+        if (is_wp_error($product_cats)) {
+            $product_cats = [];
+        }
+        ?>
+        <div class="cjs-size-kit-settings">
+            <form id="cjs-size-kit-settings-form" class="cjs-size-kit-settings-form">
+                <?php wp_nonce_field('cjs_save_size_kit_settings', 'cjs_size_kit_nonce'); ?>
+
+                <div class="cjs-option-section">
+                    <h3><?php _e('Size Kit at Checkout', 'custom-jewelry-system'); ?></h3>
+                    <p>
+                        <label>
+                            <input type="checkbox" name="cjs_size_kit_enabled" value="1" <?php checked($enabled, true); ?> />
+                            <?php _e('Enable size kit checkbox and modal on checkout for qualifying categories', 'custom-jewelry-system'); ?>
+                        </label>
+                    </p>
+                </div>
+
+                <div class="cjs-option-section">
+                    <h3><?php _e('Qualifying categories', 'custom-jewelry-system'); ?></h3>
+                    <p class="description"><?php _e('Select product categories that qualify for the size kit option. The checkbox is shown only when the cart contains a product from one of these categories.', 'custom-jewelry-system'); ?></p>
+                    <div class="cjs-size-kit-categories">
+                        <?php foreach ($product_cats as $term) : ?>
+                        <label class="cjs-size-kit-cat-label">
+                            <input type="checkbox" name="cjs_size_kit_categories[]" value="<?php echo esc_attr($term->term_id); ?>"
+                                <?php checked(in_array((string) $term->term_id, array_map('strval', $categories))); ?> />
+                            <?php echo esc_html($term->name); ?>
+                        </label>
+                        <?php endforeach; ?>
+                    </div>
+                </div>
+
+                <div class="cjs-option-section">
+                    <h3><?php _e('Modal text (rules)', 'custom-jewelry-system'); ?></h3>
+                    <p class="description"><?php _e('This text is shown in the consent modal when the customer clicks the size kit checkbox.', 'custom-jewelry-system'); ?></p>
+                    <?php
+                    wp_editor($modal_text, 'cjs_size_kit_modal_text', [
+                        'textarea_name' => 'cjs_size_kit_modal_text',
+                        'textarea_rows' => 12,
+                        'media_buttons' => true,
+                        'teeny'         => false,
+                        'quicktags'     => true,
+                        'tinymce'       => true,
+                        'wpautop'       => true,
+                    ]);
+                    ?>
+                </div>
+
+                <p>
+                    <button type="submit" class="button button-primary" id="cjs-size-kit-save-btn"><?php _e('Save Size Kit settings', 'custom-jewelry-system'); ?></button>
+                    <span class="cjs-size-kit-save-status" style="margin-left: 10px;"></span>
+                </p>
+            </form>
         </div>
         <?php
     }

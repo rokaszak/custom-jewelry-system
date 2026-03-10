@@ -51,6 +51,41 @@
                     $('.cjs-stone-status-dropdown-trigger').attr('aria-expanded', 'false');
                 }
             });
+
+            // Size Kit settings save
+            $(document).on('submit', '#cjs-size-kit-settings-form', this.saveSizeKitSettings);
+        },
+
+        saveSizeKitSettings: function(e) {
+            e.preventDefault();
+            var $form = $('#cjs-size-kit-settings-form');
+            var $btn = $form.find('#cjs-size-kit-save-btn');
+            var $status = $form.find('.cjs-size-kit-save-status');
+
+            if (typeof tinyMCE !== 'undefined' && tinyMCE.get('cjs_size_kit_modal_text')) {
+                tinyMCE.triggerSave();
+            }
+
+            var formData = $form.serialize();
+            formData += '&action=cjs_save_size_kit_settings';
+
+            $btn.prop('disabled', true);
+            $status.removeClass('cjs-error cjs-success').text('');
+
+            $.post(cjs_ajax.ajax_url, formData)
+                .done(function(response) {
+                    if (response.success) {
+                        $status.addClass('cjs-success').text(response.data && response.data.message ? response.data.message : 'Saved.');
+                    } else {
+                        $status.addClass('cjs-error').text(response.data && response.data.message ? response.data.message : 'Error.');
+                    }
+                })
+                .fail(function() {
+                    $status.addClass('cjs-error').text(cjs_ajax.strings && cjs_ajax.strings.error ? cjs_ajax.strings.error : 'Error.');
+                })
+                .always(function() {
+                    $btn.prop('disabled', false);
+                });
         },
 
         initStoneStatusDropdown: function() {

@@ -1042,6 +1042,35 @@
     border-left: 4px solid #005177;
 }
 
+/* Size Kit settings tab */
+.cjs-size-kit-save-status.cjs-success {
+    color: #00a32a;
+}
+
+.cjs-size-kit-save-status.cjs-error {
+    color: #d63638;
+}
+
+.cjs-size-kit-categories {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px 20px;
+    max-height: 200px;
+    overflow-y: auto;
+}
+
+.cjs-size-kit-cat-label {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    margin: 0;
+    cursor: pointer;
+}
+
+.cjs-size-kit-settings-form{
+    padding: 2rem;
+}
+
 /* Admin Bar Fix */
 .wp-admin #cjs-notice {
     top: 32px;

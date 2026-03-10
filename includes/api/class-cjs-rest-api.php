@@ -44,6 +44,7 @@ class CJS_REST_API {
         add_action('wp_ajax_cjs_delete_file', [__CLASS__, 'handle_file_delete']);
         add_action('wp_ajax_cjs_download_file', [__CLASS__, 'handle_file_download']);
         add_action('wp_ajax_cjs_update_options_order', [__CLASS__, 'ajax_update_options_order']);
+        add_action('wp_ajax_cjs_save_size_kit_settings', [__CLASS__, 'ajax_save_size_kit_settings']);
     }
     
     /**
@@ -1399,5 +1400,31 @@ class CJS_REST_API {
             $wpdb->query('ROLLBACK');
             wp_send_json_error(['message' => $e->getMessage()]);
         }
+    }
+
+    /**
+     * AJAX: Save Size Kit settings
+     */
+    public static function ajax_save_size_kit_settings() {
+        if (!isset($_POST['cjs_size_kit_nonce']) || !wp_verify_nonce(sanitize_text_field(wp_unslash($_POST['cjs_size_kit_nonce'])), 'cjs_save_size_kit_settings')) {
+            wp_send_json_error(['message' => 'Invalid nonce']);
+            return;
+        }
+
+        self::check_permission();
+
+        $enabled = !empty($_POST['cjs_size_kit_enabled']);
+        $categories = [];
+        if (!empty($_POST['cjs_size_kit_categories']) && is_array($_POST['cjs_size_kit_categories'])) {
+            $categories = array_map('absint', $_POST['cjs_size_kit_categories']);
+            $categories = array_values(array_filter($categories));
+        }
+        $modal_text = isset($_POST['cjs_size_kit_modal_text']) ? wp_kses_post(wp_unslash($_POST['cjs_size_kit_modal_text'])) : '';
+
+        update_option('cjs_size_kit_enabled', $enabled);
+        update_option('cjs_size_kit_categories', $categories);
+        update_option('cjs_size_kit_modal_text', $modal_text);
+
+        wp_send_json_success(['message' => __('Settings saved.', 'custom-jewelry-system')]);
     }
 }

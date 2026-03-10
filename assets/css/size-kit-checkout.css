@@ -1,0 +1,99 @@
+/* Size Kit consent modal on checkout */
+.cjs-size-kit-modal {
+    position: fixed;
+    inset: 0;
+    z-index: 100000;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 20px;
+}
+
+.cjs-size-kit-modal[hidden] {
+    display: none;
+}
+
+.cjs-size-kit-modal-backdrop {
+    position: absolute;
+    inset: 0;
+    background: rgba(0, 0, 0, 0.5);
+}
+
+.cjs-size-kit-modal-panel {
+    position: relative;
+    background: #fff;
+    border-radius: 8px;
+    box-shadow: 0 4px 24px rgba(0, 0, 0, 0.15);
+    max-width: 560px;
+    width: 100%;
+    max-height: 85vh;
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+}
+
+.cjs-size-kit-modal-title {
+    margin: 0;
+    padding: 20px 24px 12px;
+    font-size: 2rem;
+    border-bottom: 1px solid #e0e0e0;
+}
+
+.cjs-size-kit-modal-content {
+    padding: 16px 24px;
+    overflow-y: auto;
+    flex: 1;
+}
+
+.cjs-size-kit-modal-content p:first-child {
+    margin-top: 0;
+}
+
+.cjs-size-kit-modal-content p:last-child {
+    margin-bottom: 0;
+}
+
+.cjs-size-kit-modal-actions {
+    display: flex;
+    justify-content: space-between;
+    gap: 12px;
+    padding: 16px 24px 24px;
+    border-top: 1px solid #e0e0e0;
+}
+
+.cjs-size-kit-btn-decline.button {
+    order: 1;
+    background: transparent;
+    color: #303444;
+    outline: 1px solid #303444;
+    transition: all 0.35s ease;
+}
+.cjs-size-kit-btn-decline.button:hover {
+    background: #303444;
+    color: #fff;
+}
+
+.cjs-size-kit-btn-accept.button {
+    order: 2;
+    transition: all 0.35s ease;
+}
+
+.cjs-size-kit-modal a {
+    color: blue;
+    text-decoration: underline;
+}
+
+@media (max-width: 480px) {
+    .cjs-size-kit-modal-actions {
+        flex-direction: column;
+    }
+
+    .cjs-size-kit-btn-accept {
+        margin-left: 0;
+        order: 1;
+    }
+
+    .cjs-size-kit-btn-decline {
+        order: 2;
+    }
+}
