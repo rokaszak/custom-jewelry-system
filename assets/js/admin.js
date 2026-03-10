@@ -16,6 +16,8 @@
             this.initFileUpload();
             this.initSortableOptions();
             this.initStoneStatusDropdown();
+            this.initInventory();
+            this.initHighlightFromHash();
             this.StoneManager.init();
             this.StoneOrderManager.init();
             console.log('CJS: Initialization complete');
@@ -54,6 +56,266 @@
 
             // Size Kit settings save
             $(document).on('submit', '#cjs-size-kit-settings-form', this.saveSizeKitSettings);
+        },
+
+        initHighlightFromHash: function() {
+            var hash = window.location.hash;
+            if (!hash || hash.length < 2) return;
+            var id = hash.slice(1);
+            var el = document.getElementById(id);
+            if (!el) return;
+            var $row = $(el);
+            if ($row.closest('.cjs-orders-table').length || $row.closest('.cjs-inventory-table').length) {
+                $row.addClass('cjs-row-highlight');
+                var scrollEl = el;
+                setTimeout(function() {
+                    scrollEl.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                }, 100);
+                setTimeout(function() {
+                    $row.removeClass('cjs-row-highlight');
+                }, 3000);
+            }
+        },
+
+        initInventory: function() {
+            var self = this;
+            // Inventory page: inline edit
+            $(document).on('change', '.cjs-inline-inventory-edit', function() {
+                var $el = $(this);
+                var itemId = $el.data('item-id');
+                var field = $el.data('field');
+                var value = $el.is(':checkbox') ? ($el.is(':checked') ? 1 : 0) : $el.val();
+                $el.addClass('cjs-loading');
+                $.post(cjs_ajax.ajax_url, {
+                    action: 'cjs_update_inventory_item',
+                    nonce: cjs_ajax.nonce,
+                    item_id: itemId,
+                    field: field,
+                    value: value
+                }).done(function(response) {
+                    if (response.success) {
+                        CJS.showNotice(typeof cjs_ajax.strings !== 'undefined' && cjs_ajax.strings.saved ? cjs_ajax.strings.saved : 'Saved', 'success');
+                    } else {
+                        CJS.showNotice('Update failed: ' + (response.data && response.data.message ? response.data.message : 'Unknown error'), 'error');
+                    }
+                }).fail(function() {
+                    CJS.showNotice(typeof cjs_ajax.strings !== 'undefined' && cjs_ajax.strings.error ? cjs_ajax.strings.error : 'Error', 'error');
+                }).always(function() {
+                    $el.removeClass('cjs-loading');
+                });
+            });
+
+            // Inventory page: add item
+            $(document).on('click', '#cjs-inventory-add-item', function() {
+                var $btn = $(this);
+                $btn.prop('disabled', true);
+                $.post(cjs_ajax.ajax_url, {
+                    action: 'cjs_create_inventory_item',
+                    nonce: cjs_ajax.nonce
+                }).done(function(response) {
+                    if (response.success && response.data) {
+                        location.reload();
+                    }
+                }).always(function() {
+                    $btn.prop('disabled', false);
+                });
+            });
+
+            // Inventory page: delete item
+            $(document).on('click', '.cjs-inventory-delete', function() {
+                if (!confirm(cjs_ajax.strings.confirm_delete)) return;
+                var itemId = $(this).data('item-id');
+                var $row = $(this).closest('tr');
+                $.post(cjs_ajax.ajax_url, {
+                    action: 'cjs_delete_inventory_item',
+                    nonce: cjs_ajax.nonce,
+                    item_id: itemId
+                }).done(function(response) {
+                    if (response.success) {
+                        CJS.showNotice('Item deleted', 'success');
+                        $row.remove();
+                    } else {
+                        CJS.showNotice('Delete failed: ' + (response.data && response.data.message ? response.data.message : 'Unknown error'), 'error');
+                    }
+                }).fail(function() {
+                    CJS.showNotice(typeof cjs_ajax.strings !== 'undefined' && cjs_ajax.strings.error ? cjs_ajax.strings.error : 'Error', 'error');
+                });
+            });
+
+            // Inventory page: Events modal
+            var fieldLabels = { item_status: 'Status', item_category: 'Category', order_id: 'Order', name: 'Name', identifier: 'Identifier' };
+            $(document).on('click', '.cjs-inventory-events-btn', function() {
+                var raw = $(this).attr('data-events');
+                var events = [];
+                try {
+                    events = raw ? JSON.parse(raw) : [];
+                } catch (e) {
+                    events = [];
+                }
+                var $list = $('#cjs-inventory-events-list');
+                $list.empty();
+                if (!events || events.length === 0) {
+                    $list.html('<p class="cjs-inventory-events-empty">No events recorded</p>');
+                } else {
+                    events.forEach(function(ev) {
+                        var label = fieldLabels[ev.field] || ev.field;
+                        var oldVal = ev.old != null ? ev.old : '';
+                        var newVal = ev.new != null ? ev.new : '';
+                        var desc;
+                        if (ev.field === 'order_id') {
+                            if (newVal === '' || newVal === '0') {
+                                desc = 'Order unassigned' + (oldVal ? ' (was #' + oldVal + ')' : '') + ' by ' + (ev.user || '');
+                            } else {
+                                desc = 'Order assigned to #' + newVal + ' by ' + (ev.user || '');
+                            }
+                        } else {
+                            desc = label + ' changed from "' + oldVal + '" to "' + newVal + '" by ' + (ev.user || '');
+                        }
+                        var row = '<div class="cjs-inventory-event-row"><span class="cjs-inventory-event-time">' + (ev.timestamp || '') + '</span> ' + desc + '</div>';
+                        $list.append(row);
+                    });
+                }
+                $('#cjs-inventory-events-modal').css('display', 'flex');
+            });
+            $(document).on('click', '.cjs-inventory-events-modal-backdrop', function() {
+                CJS.closeModal();
+            });
+
+            // Inventory page: order search (debounced)
+            var orderSearchTimeout;
+            $(document).on('input', '.cjs-inventory-order-search', function() {
+                var $input = $(this);
+                var term = $input.val().trim();
+                var $results = $input.siblings('.cjs-inventory-order-results');
+                if (term.length < 2) {
+                    $results.remove();
+                    return;
+                }
+                clearTimeout(orderSearchTimeout);
+                orderSearchTimeout = setTimeout(function() {
+                    $.post(cjs_ajax.ajax_url, {
+                        action: 'cjs_search_orders_for_inventory',
+                        nonce: cjs_ajax.nonce,
+                        term: term
+                    }).done(function(response) {
+                        if (response.success && response.data && response.data.length) {
+                            if (!$results.length) {
+                                $results = $('<div class="cjs-inventory-order-results"></div>').insertAfter($input);
+                            }
+                            $results.empty().show();
+                            response.data.forEach(function(o) {
+                                $results.append($('<div class="cjs-inventory-order-result" data-order-id="' + o.id + '" data-order-text="' + o.text.replace(/"/g, '&quot;') + '">' + o.text + '</div>'));
+                            });
+                        } else {
+                            $results.remove();
+                        }
+                    });
+                }, 300);
+            });
+            $(document).on('click', '.cjs-inventory-order-result', function() {
+                var orderId = $(this).data('order-id');
+                var itemId = $(this).closest('td').find('.cjs-inventory-order-search').data('item-id');
+                $(this).siblings('.cjs-inventory-order-results').remove();
+                var $cell = $(this).closest('td');
+                $cell.addClass('cjs-loading');
+                $.post(cjs_ajax.ajax_url, {
+                    action: 'cjs_update_inventory_item',
+                    nonce: cjs_ajax.nonce,
+                    item_id: itemId,
+                    field: 'order_id',
+                    value: orderId
+                }).done(function(response) {
+                    if (response.success) {
+                        CJS.showNotice(typeof cjs_ajax.strings !== 'undefined' && cjs_ajax.strings.saved ? cjs_ajax.strings.saved : 'Saved', 'success');
+                        location.reload();
+                    } else {
+                        CJS.showNotice('Update failed: ' + (response.data && response.data.message ? response.data.message : 'Unknown error'), 'error');
+                    }
+                }).fail(function() {
+                    CJS.showNotice(typeof cjs_ajax.strings !== 'undefined' && cjs_ajax.strings.error ? cjs_ajax.strings.error : 'Error', 'error');
+                }).always(function() {
+                    $cell.removeClass('cjs-loading');
+                });
+            });
+            // Orders page: + Inventory dropdown
+            $(document).on('click', '.cjs-inventory-assign-trigger', function(e) {
+                e.preventDefault();
+                var $btn = $(this);
+                var orderId = $btn.data('order-id');
+                var $cell = $btn.closest('td');
+                var $drop = $cell.find('.cjs-inventory-dropdown-panel');
+                if ($drop.length) {
+                    $drop.toggle();
+                    return;
+                }
+                $drop = $('<div class="cjs-inventory-dropdown-panel"></div>');
+                $cell.append($drop);
+                $.post(cjs_ajax.ajax_url, {
+                    action: 'cjs_get_available_inventory',
+                    nonce: cjs_ajax.nonce
+                }).done(function(response) {
+                    if (response.success && response.data && response.data.length) {
+                        response.data.forEach(function(it) {
+                            $drop.append($('<div class="cjs-inventory-dropdown-item" data-item-id="' + it.id + '">' + (it.name || '') + ' ' + (it.identifier ? '(' + it.identifier + ')' : '') + ' — ' + (it.status || '') + '</div>'));
+                        });
+                    } else {
+                        $drop.append($('<div class="cjs-inventory-dropdown-item cjs-inventory-dropdown-empty">' + (typeof cjs_ajax.strings !== 'undefined' && cjs_ajax.strings.no_items ? cjs_ajax.strings.no_items : 'No available items') + '</div>'));
+                    }
+                });
+                $(document).one('click', function(ev) {
+                    if (!$(ev.target).closest('.cjs-inventory-dropdown-panel').length) {
+                        $drop.remove();
+                    }
+                });
+                e.stopPropagation();
+            });
+            $(document).on('click', '.cjs-inventory-dropdown-item:not(.cjs-inventory-dropdown-empty)', function(e) {
+                e.stopPropagation();
+                var itemId = $(this).data('item-id');
+                var orderId = $(this).closest('td').find('.cjs-inventory-assign-trigger').data('order-id');
+                var $cell = $(this).closest('td');
+                var $panel = $(this).closest('.cjs-inventory-dropdown-panel');
+                $.post(cjs_ajax.ajax_url, {
+                    action: 'cjs_assign_inventory_to_order',
+                    nonce: cjs_ajax.nonce,
+                    item_id: itemId,
+                    order_id: orderId
+                }).done(function(response) {
+                    if (response.success && response.data) {
+                        $panel.remove();
+                        var inv = response.data;
+                        var invPage = (window.location.pathname || '').indexOf('admin') !== -1 ? (window.location.pathname + '?page=cjs-inventory') : '';
+                        var display = inv.display_string || inv.name || (inv.identifier ? inv.identifier : '#' + inv.id);
+                        var pill = '<div class="cjs-inventory-pill"><a href="' + invPage + '" target="_blank">' + display + '</a> <button type="button" class="cjs-inventory-unassign" data-item-id="' + inv.id + '" data-order-id="' + orderId + '" title="Detach">&times;</button></div>';
+                        var $need = $cell.find('.cjs-inventory-pill-needed');
+                        if ($need.length) {
+                            $need.after(pill);
+                        } else {
+                            $cell.find('.cjs-inventory-assign-trigger').before(pill);
+                        }
+                    }
+                });
+            });
+            $(document).on('click', '.cjs-inventory-unassign', function(e) {
+                e.preventDefault();
+                var itemId = $(this).data('item-id');
+                var orderId = $(this).data('order-id');
+                var $pill = $(this).closest('.cjs-inventory-pill');
+                var isInventoryPage = $pill.closest('.cjs-inventory-row').length > 0;
+                $.post(cjs_ajax.ajax_url, {
+                    action: 'cjs_unassign_inventory_from_order',
+                    nonce: cjs_ajax.nonce,
+                    item_id: itemId
+                }).done(function(response) {
+                    if (response.success) {
+                        if (isInventoryPage) {
+                            location.reload();
+                        } else {
+                            $pill.remove();
+                        }
+                    }
+                });
+            });
         },
 
         saveSizeKitSettings: function(e) {

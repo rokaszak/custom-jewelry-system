@@ -3,7 +3,7 @@
  * Plugin Name: Custom Jewelry System
  * Plugin URI: https://Proven.lt/
  * Description: Advanced order management and stone tracking system for jewelers
- * Version: 1.4.0   
+ * Version: 1.4.5   
  * Author: Rokas Zakarauskas
  * Text Domain: custom-jewelry-system
  * Domain Path: /languages
@@ -19,7 +19,7 @@ if (!defined('ABSPATH')) {
 }
 
 // Define plugin constants
-define('CJS_VERSION', '1.4.0');
+define('CJS_VERSION', '1.4.5');
 define('CJS_PLUGIN_DIR', plugin_dir_path(__FILE__));
 define('CJS_PLUGIN_URL', plugin_dir_url(__FILE__));
 define('CJS_PLUGIN_BASENAME', plugin_basename(__FILE__));
@@ -83,10 +83,12 @@ class CustomJewelrySystem {
         require_once CJS_PLUGIN_DIR . 'includes/models/class-cjs-stone.php';
         require_once CJS_PLUGIN_DIR . 'includes/models/class-cjs-stone-order.php';
         require_once CJS_PLUGIN_DIR . 'includes/models/class-cjs-order-extension.php';
+        require_once CJS_PLUGIN_DIR . 'includes/models/class-cjs-inventory-item.php';
         
         // Admin includes
         require_once CJS_PLUGIN_DIR . 'includes/admin/class-cjs-admin-orders.php';
         require_once CJS_PLUGIN_DIR . 'includes/admin/class-cjs-admin-stones.php';
+        require_once CJS_PLUGIN_DIR . 'includes/admin/class-cjs-admin-inventory.php';
         require_once CJS_PLUGIN_DIR . 'includes/admin/class-cjs-admin-stone-orders.php';
         require_once CJS_PLUGIN_DIR . 'includes/admin/class-cjs-admin-settings.php';
         require_once CJS_PLUGIN_DIR . 'includes/class-cjs-modals.php';
@@ -267,6 +269,16 @@ class CustomJewelrySystem {
             'manage_options',
             'cjs-required-stones',
             [CJS_Admin_Stones::class, 'render_page']
+        );
+        
+        // Submenu - Inventory
+        add_submenu_page(
+            'custom-jewelry-system',
+            __('Inventory', 'custom-jewelry-system'),
+            __('Inventorius', 'custom-jewelry-system'),
+            'manage_options',
+            'cjs-inventory',
+            [CJS_Admin_Inventory::class, 'render_page']
         );
         
         // Submenu - Settings & Log

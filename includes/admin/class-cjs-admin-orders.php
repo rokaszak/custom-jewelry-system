@@ -15,6 +15,28 @@ class CJS_Admin_Orders {
      * Render the orders list page
      */
     public static function render_page() {
+        // Redirect to correct page when deep-linking to an order
+        $highlight_order = isset($_GET['highlight_order']) ? absint($_GET['highlight_order']) : 0;
+        if ($highlight_order) {
+            $search = isset($_GET['s']) ? sanitize_text_field($_GET['s']) : '';
+            $status_filter = isset($_GET['status']) ? sanitize_text_field($_GET['status']) : '';
+            $order_model_filter = isset($_GET['order_model']) ? sanitize_text_field($_GET['order_model']) : '';
+            $order_production_filter = isset($_GET['order_production']) ? sanitize_text_field($_GET['order_production']) : '';
+            $order_type_filter = isset($_GET['order_type']) ? sanitize_text_field($_GET['order_type']) : '';
+            $has_stones_filter = isset($_GET['has_stones']) ? sanitize_text_field($_GET['has_stones']) : '';
+            $has_size_kit_filter = isset($_GET['has_size_kit']) ? sanitize_text_field($_GET['has_size_kit']) : '';
+            $stone_order_status_filter = [];
+            if (!empty($_GET['stone_order_status']) && is_array($_GET['stone_order_status'])) {
+                $stone_order_status_filter = array_map('sanitize_text_field', $_GET['stone_order_status']);
+                $stone_order_status_filter = array_filter($stone_order_status_filter);
+            }
+            $page = self::get_page_for_order($highlight_order, 20, $search, $status_filter, $order_model_filter, $order_production_filter, $order_type_filter, $has_stones_filter, $stone_order_status_filter, $has_size_kit_filter);
+            $redirect_args = array_merge($_GET, ['page' => 'cjs-orders-list', 'paged' => $page]);
+            unset($redirect_args['highlight_order']);
+            wp_redirect(add_query_arg($redirect_args, admin_url('admin.php')) . '#order' . $highlight_order);
+            exit;
+        }
+
         // Get filters
         $search = isset($_GET['s']) ? sanitize_text_field($_GET['s']) : '';
         $status_filter = isset($_GET['status']) ? sanitize_text_field($_GET['status']) : '';
@@ -22,6 +44,7 @@ class CJS_Admin_Orders {
         $order_production_filter = isset($_GET['order_production']) ? sanitize_text_field($_GET['order_production']) : '';
         $order_type_filter = isset($_GET['order_type']) ? sanitize_text_field($_GET['order_type']) : '';
         $has_stones_filter = isset($_GET['has_stones']) ? sanitize_text_field($_GET['has_stones']) : '';
+        $has_size_kit_filter = isset($_GET['has_size_kit']) ? sanitize_text_field($_GET['has_size_kit']) : '';
         $stone_order_status_filter = [];
         if (!empty($_GET['stone_order_status']) && is_array($_GET['stone_order_status'])) {
             $stone_order_status_filter = array_map('sanitize_text_field', $_GET['stone_order_status']);
@@ -82,6 +105,11 @@ class CJS_Admin_Orders {
                         <option value="1" <?php selected($has_stones_filter, '1'); ?>><?php _e('Has required stones', 'custom-jewelry-system'); ?></option>
                         <option value="0" <?php selected($has_stones_filter, '0'); ?>><?php _e('No required stones', 'custom-jewelry-system'); ?></option>
                     </select>
+                    <select name="has_size_kit">
+                        <option value=""><?php _e('No size kit filtering', 'custom-jewelry-system'); ?></option>
+                        <option value="missing" <?php selected($has_size_kit_filter, 'missing'); ?>><?php _e('Missing size kit', 'custom-jewelry-system'); ?></option>
+                        <option value="has" <?php selected($has_size_kit_filter, 'has'); ?>><?php _e('Has size kit', 'custom-jewelry-system'); ?></option>
+                    </select>
                     <?php
                     $stone_order_statuses = get_option('cjs_stone_order_statuses', []);
                     if (!empty($stone_order_statuses)) :
@@ -123,6 +151,7 @@ class CJS_Admin_Orders {
                         <th><?php _e('Liejimas', 'custom-jewelry-system'); ?></th>
                         <th><?php _e('Reikalingi akmenys', 'custom-jewelry-system'); ?></th>
                         <th><?php _e('Akmenų užsakymas', 'custom-jewelry-system'); ?></th>
+                        <th><?php _e('Priskirtas inventorius', 'custom-jewelry-system'); ?></th>
                         <th><?php _e('Statusas', 'custom-jewelry-system'); ?></th>
                         <th><?php _e('Užsakymo tipas', 'custom-jewelry-system'); ?></th>
                         <th><?php _e('Spauda', 'custom-jewelry-system'); ?></th>
@@ -131,10 +160,10 @@ class CJS_Admin_Orders {
                 </thead>
                 <tbody>
                     <?php
-                    $orders = self::get_orders($page, $per_page, $search, $status_filter, $order_model_filter, $order_production_filter, $order_type_filter, $has_stones_filter, $stone_order_status_filter);
+                    $orders = self::get_orders($page, $per_page, $search, $status_filter, $order_model_filter, $order_production_filter, $order_type_filter, $has_stones_filter, $stone_order_status_filter, $has_size_kit_filter);
                     
                     if (empty($orders['items'])) {
-                        echo '<tr><td colspan="14">' . __('No orders found', 'custom-jewelry-system') . '</td></tr>';
+                        echo '<tr><td colspan="15">' . __('No orders found', 'custom-jewelry-system') . '</td></tr>';
                     } else {
                         foreach ($orders['items'] as $order_data) {
                             self::render_order_row($order_data);
@@ -172,11 +201,12 @@ class CJS_Admin_Orders {
     /**
      * Get orders with extended data (HPOS Compatible) - FIXED to exclude completed orders
      */
-    private static function get_orders($page, $per_page, $search = '', $status_filter = '', $order_model_filter = '', $order_production_filter = '', $order_type_filter = '', $has_stones_filter = '', $stone_order_status_filter = []) {
+    private static function get_orders($page, $per_page, $search = '', $status_filter = '', $order_model_filter = '', $order_production_filter = '', $order_type_filter = '', $has_stones_filter = '', $stone_order_status_filter = [], $has_size_kit_filter = '', $get_all = false) {
         global $wpdb;
         
         $offset = ($page - 1) * $per_page;
         $order_stones_cache = [];
+        $order_inventory_cache = [];
         
         // Use WooCommerce's order query for HPOS compatibility
         $args = [
@@ -335,21 +365,58 @@ class CJS_Admin_Orders {
             }
             $all_order_ids = $filtered_ids;
         }
+
+        // Filter by size kit: missing = same logic as red pill (requested + applicable status + no kit); has = has at least one
+        if ($has_size_kit_filter === 'missing' || $has_size_kit_filter === 'has') {
+            $filtered_ids = [];
+            foreach ($all_order_ids as $order_id) {
+                $order = wc_get_order($order_id);
+                if (!$order) {
+                    continue;
+                }
+                $ext_data = CJS_Order_Extension::get_order_extension($order_id);
+                $manufacturing_status = $ext_data['manufacturing_status'] ?? '';
+                $inventory = isset($order_inventory_cache[$order_id]) ? $order_inventory_cache[$order_id] : CJS_Inventory_Item::get_by_order($order_id);
+                if (!isset($order_inventory_cache[$order_id])) {
+                    $order_inventory_cache[$order_id] = $inventory;
+                }
+                $has_kit_assigned = false;
+                foreach ($inventory as $inv_item) {
+                    if ($inv_item->get('item_category') === 'Matavimo Rinkinys') {
+                        $has_kit_assigned = true;
+                        break;
+                    }
+                }
+                $kit_requested = $order->get_meta('size_kit_requested') === 'yes';
+                $show_red_pill = $kit_requested && in_array($manufacturing_status, ['', 'Nepradėta', 'Užsakyti modelį'], true) && !$has_kit_assigned;
+                if ($has_size_kit_filter === 'missing' && $show_red_pill) {
+                    $filtered_ids[] = $order_id;
+                } elseif ($has_size_kit_filter === 'has' && $has_kit_assigned) {
+                    $filtered_ids[] = $order_id;
+                }
+            }
+            $all_order_ids = $filtered_ids;
+        }
         
         // Total count
         $total_orders = count($all_order_ids);
         
-        // Get order extensions and sort by delivery date (use cached stones when available)
+        // Get order extensions and sort by delivery date (use cached stones and inventory when available)
         $order_data = [];
         foreach ($all_order_ids as $order_id) {
             $order = wc_get_order($order_id);
             if ($order) {
                 $ext_data = CJS_Order_Extension::get_order_extension($order_id);
                 $stones = isset($order_stones_cache[$order_id]) ? $order_stones_cache[$order_id] : CJS_Stone::get_by_order($order_id);
+                $inventory_items = isset($order_inventory_cache[$order_id]) ? $order_inventory_cache[$order_id] : CJS_Inventory_Item::get_by_order($order_id);
+                if (!isset($order_inventory_cache[$order_id])) {
+                    $order_inventory_cache[$order_id] = $inventory_items;
+                }
                 $order_data[] = [
                     'order' => $order,
                     'extension' => (object) $ext_data,
                     'stones' => $stones,
+                    'inventory_items' => $inventory_items,
                     'items' => $order->get_items(),
                     'sort_key' => self::get_sort_key($ext_data['deliver_by_date'], $order_id)
                 ];
@@ -365,15 +432,30 @@ class CJS_Admin_Orders {
             }
             return $date_comparison;
         });
-        
-        // Apply pagination
-        $order_data = array_slice($order_data, $offset, $per_page);
-        
+
+        // Apply pagination (unless get_all)
+        if (!$get_all) {
+            $order_data = array_slice($order_data, $offset, $per_page);
+        }
+
         return [
             'items' => $order_data,
             'total' => $total_orders,
             'total_pages' => ceil($total_orders / $per_page)
         ];
+    }
+
+    /**
+     * Get the page number that contains the given order (for deep-linking).
+     */
+    public static function get_page_for_order($order_id, $per_page = 20, $search = '', $status_filter = '', $order_model_filter = '', $order_production_filter = '', $order_type_filter = '', $has_stones_filter = '', $stone_order_status_filter = [], $has_size_kit_filter = '') {
+        $result = self::get_orders(1, $per_page, $search, $status_filter, $order_model_filter, $order_production_filter, $order_type_filter, $has_stones_filter, $stone_order_status_filter, $has_size_kit_filter, true);
+        foreach ($result['items'] as $i => $od) {
+            if ((int) $od['order']->get_id() === (int) $order_id) {
+                return floor($i / $per_page) + 1;
+            }
+        }
+        return 1;
     }
     
     /**
@@ -415,6 +497,7 @@ class CJS_Admin_Orders {
         $ext = $order_data['extension'];
         $stones = $order_data['stones'];
         $items = $order_data['items'];
+        $inventory_items = isset($order_data['inventory_items']) ? $order_data['inventory_items'] : [];
         
         $order_id = $order->get_id();
         
@@ -443,7 +526,7 @@ class CJS_Admin_Orders {
             ? $order->get_edit_order_url()
             : admin_url('post.php?post=' . $order_id . '&action=edit');
         ?>
-        <tr data-order-id="<?php echo esc_attr($order_id); ?>">
+        <tr id="order<?php echo esc_attr($order_id); ?>" data-order-id="<?php echo esc_attr($order_id); ?>">
             <td>
                 <a href="<?php echo esc_url($edit_url); ?>">
                     #<?php echo esc_html($order->get_order_number()); ?>
@@ -573,6 +656,37 @@ class CJS_Admin_Orders {
                 <button type="button" class="button button-small cjs-create-stone-order" 
                         data-order-id="<?php echo esc_attr($order_id); ?>" style="margin-top: 5px;">
                     <?php _e('+ Stone Order', 'custom-jewelry-system'); ?>
+                </button>
+            </td>
+            <td class="cjs-inventory-column">
+                <?php
+                $inventory_page_url = admin_url('admin.php?page=cjs-inventory');
+                $size_kit_requested = $order->get_meta('size_kit_requested') === 'yes';
+                $manufacturing_status = $ext->manufacturing_status ?? '';
+                $show_red_pill = $size_kit_requested && in_array($manufacturing_status, ['', 'Nepradėta', 'Užsakyti modelį'], true);
+                $has_kit_category = false;
+                foreach ($inventory_items as $inv) {
+                    if ($inv->get('item_category') === 'Matavimo Rinkinys') {
+                        $has_kit_category = true;
+                        break;
+                    }
+                }
+                if ($show_red_pill && !$has_kit_category) {
+                    echo '<div class="cjs-inventory-pill-needed">' . esc_html__('Reikalingas matavimo rinkinys', 'custom-jewelry-system') . '</div>';
+                }
+                foreach ($inventory_items as $inv) {
+                    $inv_id = $inv->get_id();
+                    $inv_anchor = $inv->get('identifier') ? sanitize_html_class($inv->get('identifier')) : 'id-' . $inv_id;
+                    $inv_page = CJS_Inventory_Item::get_page_for_item($inv_id, '', '', 20);
+                    $link_url = add_query_arg(['page' => 'cjs-inventory', 'paged' => $inv_page], admin_url('admin.php')) . '#' . $inv_anchor;
+                    echo '<div class="cjs-inventory-pill">';
+                    echo '<a href="' . esc_url($link_url) . '">' . esc_html($inv->get_display_string()) . '</a>';
+                    echo ' <button type="button" class="cjs-inventory-unassign" data-item-id="' . esc_attr($inv_id) . '" data-order-id="' . esc_attr($order_id) . '" title="' . esc_attr__('Detach from order', 'custom-jewelry-system') . '">&times;</button>';
+                    echo '</div>';
+                }
+                ?>
+                <button type="button" class="button button-small cjs-inventory-assign-trigger" data-order-id="<?php echo esc_attr($order_id); ?>" style="margin-top: 5px;">
+                    <?php _e('+ Inventory', 'custom-jewelry-system'); ?>
                 </button>
             </td>
             <td>

@@ -153,6 +153,24 @@ class CJS_Install {
             KEY object_type (object_type),
             KEY severity (severity)
         ) $charset_collate;";
+
+        // Inventory items table
+        $sql_inventory_items = "CREATE TABLE {$wpdb->prefix}cjs_inventory_items (
+            id bigint(20) unsigned NOT NULL AUTO_INCREMENT,
+            name varchar(255) DEFAULT NULL,
+            identifier varchar(255) DEFAULT NULL,
+            order_id bigint(20) unsigned DEFAULT NULL,
+            item_status varchar(100) NOT NULL DEFAULT 'Sandėlyje',
+            item_category varchar(100) DEFAULT NULL,
+            events longtext DEFAULT NULL,
+            created_by bigint(20) unsigned NOT NULL,
+            created_at datetime DEFAULT CURRENT_TIMESTAMP,
+            updated_at datetime DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+            PRIMARY KEY (id),
+            KEY order_id (order_id),
+            KEY item_status (item_status),
+            KEY item_category (item_category)
+        ) $charset_collate;";
         
         // Execute table creation with error checking
         $tables = [
@@ -161,7 +179,8 @@ class CJS_Install {
             'cjs_stone_order_items' => $sql_stone_order_items,
             'cjs_order_extensions' => $sql_order_extensions,
             'cjs_order_files' => $sql_order_files,
-            'cjs_activity_log' => $sql_activity_log
+            'cjs_activity_log' => $sql_activity_log,
+            'cjs_inventory_items' => $sql_inventory_items
         ];
         
         foreach ($tables as $table_name => $sql) {
@@ -362,6 +381,15 @@ class CJS_Install {
                 'Įprastas',
                 'Vestuvinis'
             ],
+            'inventory_statuses' => [
+                'Sandėlyje',
+                'Išsiųstas klientui',
+                'Pas klientą',
+                'Išsiųstas juvelyrui'
+            ],
+            'inventory_categories' => [
+                'Matavimo Rinkinys'
+            ],
             'stone_order_statuses' => [
                 'ideta_i_krepseli' => ['label' => 'Įdėta į krepšelį', 'color' => '#bd0000'],
                 'reikia_apmoketi' => ['label' => 'Reikia apmokėti', 'color' => '#dc3545'],
@@ -449,7 +477,8 @@ class CJS_Install {
             'cjs_order_extensions',
             'cjs_order_files',
             'cjs_activity_log',
-            'cjs_options_sort_order'
+            'cjs_options_sort_order',
+            'cjs_inventory_items'
         ];
         
         $missing_tables = [];

@@ -19,8 +19,41 @@ class CJS_Size_Kit {
 
         add_action('woocommerce_after_checkout_billing_form', [__CLASS__, 'checkout_display'], 10, 1);
         add_action('woocommerce_checkout_update_order_meta', [__CLASS__, 'save_order_meta'], 10, 2);
+        add_action('woocommerce_order_status_processing', [__CLASS__, 'maybe_auto_assign'], 10, 2);
         add_action('woocommerce_admin_order_data_after_billing_address', [__CLASS__, 'display_admin_notice'], 10, 1);
         add_action('wp_enqueue_scripts', [__CLASS__, 'enqueue_assets'], 20);
+    }
+
+    /**
+     * Auto-assign an available Matavimo Rinkinys to the order when status becomes processing (if requested and option enabled).
+     */
+    public static function maybe_auto_assign($order_id, $order = null) {
+        if (!(bool) get_option('cjs_size_kit_auto_assign', false)) {
+            return;
+        }
+        $order = $order ? $order : wc_get_order($order_id);
+        if (!$order || !is_a($order, 'WC_Order')) {
+            return;
+        }
+        if ($order->get_meta('size_kit_requested') !== 'yes') {
+            return;
+        }
+        if (!class_exists('CJS_Inventory_Item')) {
+            return;
+        }
+        $existing = CJS_Inventory_Item::get_by_order($order_id);
+        foreach ($existing as $item) {
+            if ($item->get('item_category') === 'Matavimo Rinkinys') {
+                return;
+            }
+        }
+        $available = CJS_Inventory_Item::get_available('Matavimo Rinkinys', 'Sandėlyje');
+        if (empty($available)) {
+            return;
+        }
+        $kit = $available[0];
+        $kit->set('order_id', $order_id);
+        $kit->save();
     }
 
     /**

@@ -88,12 +88,12 @@
         flex-direction: column;
     }
 
-    .cjs-size-kit-btn-accept {
+    .cjs-size-kit-btn-accept.button {
         margin-left: 0;
         order: 1;
     }
 
-    .cjs-size-kit-btn-decline {
+    .cjs-size-kit-btn-decline.button {
         order: 2;
     }
 }

@@ -102,6 +102,16 @@ class CJS_Admin_Settings {
                 'label' => __('Order Types', 'custom-jewelry-system'),
                 'format' => 'array',
                 'sortable' => true
+            ],
+            'inventory_statuses' => [
+                'label' => __('Inventory Statuses', 'custom-jewelry-system'),
+                'format' => 'array',
+                'sortable' => true
+            ],
+            'inventory_categories' => [
+                'label' => __('Inventory Categories', 'custom-jewelry-system'),
+                'format' => 'array',
+                'sortable' => true
             ]
         ];
         ?>
@@ -182,6 +192,7 @@ class CJS_Admin_Settings {
      */
     private static function render_size_kit_tab() {
         $enabled = (bool) get_option('cjs_size_kit_enabled', false);
+        $auto_assign = (bool) get_option('cjs_size_kit_auto_assign', false);
         $categories = get_option('cjs_size_kit_categories', []);
         if (!is_array($categories)) {
             $categories = [];
@@ -207,6 +218,12 @@ class CJS_Admin_Settings {
                         <label>
                             <input type="checkbox" name="cjs_size_kit_enabled" value="1" <?php checked($enabled, true); ?> />
                             <?php _e('Enable size kit checkbox and modal on checkout for qualifying categories', 'custom-jewelry-system'); ?>
+                        </label>
+                    </p>
+                    <p>
+                        <label>
+                            <input type="checkbox" name="cjs_size_kit_auto_assign" value="1" <?php checked($auto_assign, true); ?> />
+                            <?php _e('Auto-assign available Matavimo Rinkinys to new orders that request a size kit', 'custom-jewelry-system'); ?>
                         </label>
                     </p>
                 </div>
@@ -258,7 +275,8 @@ class CJS_Admin_Settings {
         $option_types = [
             'stone_types', 'stone_origins', 'stone_shapes', 'stone_colors',
             'stone_settings', 'stone_clarities', 'stone_cut_grades',
-            'origin_countries', 'manufacturing_statuses', 'order_types'
+            'origin_countries', 'manufacturing_statuses', 'order_types',
+            'inventory_statuses', 'inventory_categories'
         ];
         $is_sortable = in_array($option_type, $option_types);
         ?>

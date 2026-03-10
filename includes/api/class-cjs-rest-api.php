@@ -45,6 +45,14 @@ class CJS_REST_API {
         add_action('wp_ajax_cjs_download_file', [__CLASS__, 'handle_file_download']);
         add_action('wp_ajax_cjs_update_options_order', [__CLASS__, 'ajax_update_options_order']);
         add_action('wp_ajax_cjs_save_size_kit_settings', [__CLASS__, 'ajax_save_size_kit_settings']);
+        // Inventory item handlers
+        add_action('wp_ajax_cjs_create_inventory_item', [__CLASS__, 'ajax_create_inventory_item']);
+        add_action('wp_ajax_cjs_update_inventory_item', [__CLASS__, 'ajax_update_inventory_item']);
+        add_action('wp_ajax_cjs_delete_inventory_item', [__CLASS__, 'ajax_delete_inventory_item']);
+        add_action('wp_ajax_cjs_get_available_inventory', [__CLASS__, 'ajax_get_available_inventory']);
+        add_action('wp_ajax_cjs_search_orders_for_inventory', [__CLASS__, 'ajax_search_orders_for_inventory']);
+        add_action('wp_ajax_cjs_assign_inventory_to_order', [__CLASS__, 'ajax_assign_inventory_to_order']);
+        add_action('wp_ajax_cjs_unassign_inventory_from_order', [__CLASS__, 'ajax_unassign_inventory_from_order']);
     }
     
     /**
@@ -1420,11 +1428,166 @@ class CJS_REST_API {
             $categories = array_values(array_filter($categories));
         }
         $modal_text = isset($_POST['cjs_size_kit_modal_text']) ? wp_kses_post(wp_unslash($_POST['cjs_size_kit_modal_text'])) : '';
+        $auto_assign = !empty($_POST['cjs_size_kit_auto_assign']);
 
         update_option('cjs_size_kit_enabled', $enabled);
         update_option('cjs_size_kit_categories', $categories);
         update_option('cjs_size_kit_modal_text', $modal_text);
+        update_option('cjs_size_kit_auto_assign', $auto_assign);
 
         wp_send_json_success(['message' => __('Settings saved.', 'custom-jewelry-system')]);
+    }
+
+    public static function ajax_create_inventory_item() {
+        if (!isset($_POST['nonce']) || !wp_verify_nonce(sanitize_text_field(wp_unslash($_POST['nonce'])), 'wp_rest')) {
+            wp_send_json_error(['message' => 'Invalid nonce']);
+            return;
+        }
+        self::check_permission();
+        $statuses = get_option('cjs_inventory_statuses', ['Sandėlyje']);
+        $default_status = is_array($statuses) && !empty($statuses) ? $statuses[0] : 'Sandėlyje';
+        $categories = get_option('cjs_inventory_categories', []);
+        $default_category = is_array($categories) && !empty($categories) ? $categories[0] : null;
+        $item = new CJS_Inventory_Item();
+        $item->set('item_status', $default_status);
+        $item->set('item_category', $default_category);
+        $item->set('name', '');
+        $item->set('identifier', '');
+        $item->set('order_id', null);
+        $item->set('events', wp_json_encode([]));
+        $id = $item->save();
+        if (!$id) {
+            wp_send_json_error(['message' => __('Failed to create item.', 'custom-jewelry-system')]);
+            return;
+        }
+        $item = new CJS_Inventory_Item($id);
+        wp_send_json_success($item->to_array());
+    }
+
+    public static function ajax_update_inventory_item() {
+        if (!isset($_POST['nonce']) || !wp_verify_nonce(sanitize_text_field(wp_unslash($_POST['nonce'])), 'wp_rest')) {
+            wp_send_json_error(['message' => 'Invalid nonce']);
+            return;
+        }
+        self::check_permission();
+        $item_id = isset($_POST['item_id']) ? absint($_POST['item_id']) : 0;
+        $field = isset($_POST['field']) ? sanitize_text_field(wp_unslash($_POST['field'])) : '';
+        $value = isset($_POST['value']) ? wp_unslash($_POST['value']) : null;
+        if (!$item_id || !in_array($field, ['name', 'identifier', 'order_id', 'item_status', 'item_category'], true)) {
+            wp_send_json_error(['message' => 'Invalid request']);
+            return;
+        }
+        $item = new CJS_Inventory_Item($item_id);
+        if (!$item->get_id()) {
+            wp_send_json_error(['message' => 'Item not found']);
+            return;
+        }
+        if ($field === 'order_id') {
+            $value = $value === '' || $value === null ? null : absint($value);
+        } elseif ($field === 'name' || $field === 'identifier' || $field === 'item_status' || $field === 'item_category') {
+            $value = sanitize_text_field($value);
+        }
+        $item->set($field, $value);
+        $item->save();
+        wp_send_json_success($item->to_array());
+    }
+
+    public static function ajax_delete_inventory_item() {
+        if (!isset($_POST['nonce']) || !wp_verify_nonce(sanitize_text_field(wp_unslash($_POST['nonce'])), 'wp_rest')) {
+            wp_send_json_error(['message' => 'Invalid nonce']);
+            return;
+        }
+        self::check_permission();
+        $item_id = isset($_POST['item_id']) ? absint($_POST['item_id']) : 0;
+        if (!$item_id) {
+            wp_send_json_error(['message' => 'Invalid request']);
+            return;
+        }
+        $item = new CJS_Inventory_Item($item_id);
+        if (!$item->get_id()) {
+            wp_send_json_error(['message' => 'Item not found']);
+            return;
+        }
+        $item->delete();
+        wp_send_json_success(['message' => __('Deleted.', 'custom-jewelry-system')]);
+    }
+
+    public static function ajax_get_available_inventory() {
+        if (!isset($_POST['nonce']) || !wp_verify_nonce(sanitize_text_field(wp_unslash($_POST['nonce'])), 'wp_rest')) {
+            wp_send_json_error(['message' => 'Invalid nonce']);
+            return;
+        }
+        self::check_permission();
+        $category = isset($_POST['category']) ? sanitize_text_field(wp_unslash($_POST['category'])) : null;
+        $items = CJS_Inventory_Item::get_available($category);
+        $out = [];
+        foreach ($items as $item) {
+            $out[] = [
+                'id'         => $item->get_id(),
+                'name'       => $item->get('name'),
+                'identifier' => $item->get('identifier'),
+                'status'     => $item->get('item_status'),
+                'display'    => $item->get_display_string()
+            ];
+        }
+        wp_send_json_success($out);
+    }
+
+    public static function ajax_search_orders_for_inventory() {
+        if (!isset($_POST['nonce']) || !wp_verify_nonce(sanitize_text_field(wp_unslash($_POST['nonce'])), 'wp_rest')) {
+            wp_send_json_error(['message' => 'Invalid nonce']);
+            return;
+        }
+        self::check_permission();
+        $term = isset($_POST['term']) ? sanitize_text_field(wp_unslash($_POST['term'])) : '';
+        $results = CJS_Inventory_Item::search_orders($term, 20);
+        wp_send_json_success($results);
+    }
+
+    public static function ajax_assign_inventory_to_order() {
+        if (!isset($_POST['nonce']) || !wp_verify_nonce(sanitize_text_field(wp_unslash($_POST['nonce'])), 'wp_rest')) {
+            wp_send_json_error(['message' => 'Invalid nonce']);
+            return;
+        }
+        self::check_permission();
+        $item_id = isset($_POST['item_id']) ? absint($_POST['item_id']) : 0;
+        $order_id = isset($_POST['order_id']) ? absint($_POST['order_id']) : 0;
+        if (!$item_id || !$order_id) {
+            wp_send_json_error(['message' => 'Invalid request']);
+            return;
+        }
+        $item = new CJS_Inventory_Item($item_id);
+        if (!$item->get_id()) {
+            wp_send_json_error(['message' => 'Item not found']);
+            return;
+        }
+        if ($item->get('order_id')) {
+            wp_send_json_error(['message' => __('Item already assigned.', 'custom-jewelry-system')]);
+            return;
+        }
+        $item->set('order_id', $order_id);
+        $item->save();
+        wp_send_json_success($item->to_array());
+    }
+
+    public static function ajax_unassign_inventory_from_order() {
+        if (!isset($_POST['nonce']) || !wp_verify_nonce(sanitize_text_field(wp_unslash($_POST['nonce'])), 'wp_rest')) {
+            wp_send_json_error(['message' => 'Invalid nonce']);
+            return;
+        }
+        self::check_permission();
+        $item_id = isset($_POST['item_id']) ? absint($_POST['item_id']) : 0;
+        if (!$item_id) {
+            wp_send_json_error(['message' => 'Invalid request']);
+            return;
+        }
+        $item = new CJS_Inventory_Item($item_id);
+        if (!$item->get_id()) {
+            wp_send_json_error(['message' => 'Item not found']);
+            return;
+        }
+        $item->set('order_id', null);
+        $item->save();
+        wp_send_json_success($item->to_array());
     }
 }

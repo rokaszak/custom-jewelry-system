@@ -1057,6 +1057,7 @@
     gap: 10px 20px;
     max-height: 200px;
     overflow-y: auto;
+    padding: 5px;
 }
 
 .cjs-size-kit-cat-label {
@@ -1069,6 +1070,191 @@
 
 .cjs-size-kit-settings-form{
     padding: 2rem;
+}
+
+/* Inventory column and pills (orders page) */
+.cjs-inventory-column {
+    position: relative;
+}
+
+.cjs-inventory-pill-needed {
+    display: inline-block;
+    background: #dc3545;
+    color: #fff;
+    padding: 4px 10px;
+    border-radius: 4px;
+    font-size: 12px;
+    margin-bottom: 4px;
+}
+
+.cjs-inventory-pill {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    background: #f0f0f1;
+    padding: 4px 8px;
+    border-radius: 4px;
+    font-size: 12px;
+    margin: 2px 4px 2px 0;
+}
+
+.cjs-inventory-pill a {
+    text-decoration: none;
+}
+
+.cjs-inventory-pill .cjs-inventory-unassign {
+    background: none;
+    border: none;
+    cursor: pointer;
+    padding: 0 2px;
+    font-size: 14px;
+    line-height: 1;
+    color: #666;
+}
+
+.cjs-inventory-pill .cjs-inventory-unassign:hover {
+    color: #dc3545;
+}
+
+.cjs-inventory-dropdown-panel {
+    margin-top: 4px;
+    min-width: 220px;
+    max-height: 260px;
+    overflow-y: auto;
+    background: #fff;
+    border: 1px solid #ccd0d4;
+    border-radius: 4px;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+    z-index: 100;
+}
+
+.cjs-inventory-dropdown-item {
+    padding: 8px 12px;
+    cursor: pointer;
+    border-bottom: 1px solid #eee;
+}
+
+.cjs-inventory-dropdown-item:last-child {
+    border-bottom: none;
+}
+
+.cjs-inventory-dropdown-item:hover:not(.cjs-inventory-dropdown-empty) {
+    background: #f0f0f1;
+}
+
+.cjs-inventory-dropdown-empty {
+    cursor: default;
+    color: #666;
+}
+
+/* Inventory page: order search results */
+.cjs-inventory-order-cell {
+    position: relative;
+}
+
+.cjs-inventory-order-search {
+    min-width: 180px;
+}
+
+.cjs-inventory-order-results {
+    position: absolute;
+    left: 0;
+    top: 100%;
+    margin-top: 2px;
+    min-width: 220px;
+    max-height: 200px;
+    overflow-y: auto;
+    background: #fff;
+    border: 1px solid #ccd0d4;
+    border-radius: 4px;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+    z-index: 50;
+}
+
+.cjs-inventory-order-result {
+    padding: 8px 12px;
+    cursor: pointer;
+    border-bottom: 1px solid #eee;
+}
+
+.cjs-inventory-order-result:hover {
+    background: #f0f0f1;
+}
+
+.cjs-row-highlight {
+    background-color: #fff3cd !important;
+}
+
+.button.cjs-inventory-clear-order, .button.cjs-inventory-delete {
+    color: #b32d2e;
+    border-color: #b32d2e;
+    margin-top: 0.5rem;
+}
+.button.cjs-inventory-clear-order:hover, .button.cjs-inventory-delete:hover {
+    color: #fff;
+    background: #b32d2e;
+    border-color: #b32d2e;
+}
+
+/* Inventory Events Modal - matches size kit modal structure */
+#cjs-inventory-events-modal.cjs-inventory-events-modal {
+    align-items: center;
+    justify-content: center;
+    inset: 0;
+    padding: 20px;
+}
+.cjs-inventory-events-modal-backdrop {
+    position: absolute;
+    inset: 0;
+    background: rgba(0, 0, 0, 0.5);
+    cursor: pointer;
+}
+.cjs-inventory-events-modal-panel {
+    position: relative;
+    background: #fff;
+    border-radius: 8px;
+    box-shadow: 0 4px 24px rgba(0, 0, 0, 0.15);
+    max-width: 560px;
+    width: 100%;
+    max-height: 85vh;
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+}
+.cjs-inventory-events-modal-panel .cjs-modal-close {
+    position: absolute;
+    right: 16px;
+    top: 16px;
+    z-index: 1;
+}
+.cjs-inventory-events-modal-title {
+    margin: 0;
+    padding: 20px 24px 12px;
+    font-size: 1.5rem;
+    border-bottom: 1px solid #e0e0e0;
+}
+.cjs-inventory-events-modal-content {
+    padding: 16px 24px;
+    overflow-y: auto;
+    flex: 1;
+    min-height: 0;
+}
+.cjs-inventory-events-modal-content .cjs-inventory-event-row {
+    padding: 10px 0;
+    border-bottom: 1px solid #eee;
+    font-size: 13px;
+}
+.cjs-inventory-events-modal-content .cjs-inventory-event-row:last-child {
+    border-bottom: none;
+}
+.cjs-inventory-events-modal-content .cjs-inventory-event-time {
+    color: #646970;
+    font-size: 12px;
+    margin-right: 8px;
+}
+.cjs-inventory-events-modal-content .cjs-inventory-events-empty {
+    color: #646970;
+    font-style: italic;
 }
 
 /* Admin Bar Fix */
