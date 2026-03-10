@@ -511,7 +511,7 @@ class CJS_Order_Extension {
     }
     
     /**
-     * Get order extension data - FIXED VERSION (handles NULL values and new field)
+     * Get order extension data - (handles NULL values and new field)
      */
     public static function get_order_extension($order_id) {
         global $wpdb;

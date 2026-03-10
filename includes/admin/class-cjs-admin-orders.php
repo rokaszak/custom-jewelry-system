@@ -21,6 +21,12 @@ class CJS_Admin_Orders {
         $order_model_filter = isset($_GET['order_model']) ? sanitize_text_field($_GET['order_model']) : '';
         $order_production_filter = isset($_GET['order_production']) ? sanitize_text_field($_GET['order_production']) : '';
         $order_type_filter = isset($_GET['order_type']) ? sanitize_text_field($_GET['order_type']) : '';
+        $has_stones_filter = isset($_GET['has_stones']) ? sanitize_text_field($_GET['has_stones']) : '';
+        $stone_order_status_filter = [];
+        if (!empty($_GET['stone_order_status']) && is_array($_GET['stone_order_status'])) {
+            $stone_order_status_filter = array_map('sanitize_text_field', $_GET['stone_order_status']);
+            $stone_order_status_filter = array_filter($stone_order_status_filter);
+        }
         $page = isset($_GET['paged']) ? max(1, intval($_GET['paged'])) : 1;
         $per_page = 20;
         
@@ -71,6 +77,35 @@ class CJS_Admin_Orders {
                         }
                         ?>
                     </select>
+                    <select name="has_stones">
+                        <option value=""><?php _e('No stone filtering', 'custom-jewelry-system'); ?></option>
+                        <option value="1" <?php selected($has_stones_filter, '1'); ?>><?php _e('Has required stones', 'custom-jewelry-system'); ?></option>
+                        <option value="0" <?php selected($has_stones_filter, '0'); ?>><?php _e('No required stones', 'custom-jewelry-system'); ?></option>
+                    </select>
+                    <?php
+                    $stone_order_statuses = get_option('cjs_stone_order_statuses', []);
+                    if (!empty($stone_order_statuses)) :
+                        $selected_count = count($stone_order_status_filter);
+                    ?>
+                    <div class="cjs-stone-status-dropdown">
+                        <button type="button" class="button cjs-stone-status-dropdown-trigger" aria-expanded="false" aria-haspopup="true">
+                            <?php _e('Stone order status', 'custom-jewelry-system'); ?>
+                            <?php if ($selected_count > 0) : ?>
+                                <span class="cjs-stone-status-count">(<?php echo (int) $selected_count; ?>)</span>
+                            <?php endif; ?>
+                        </button>
+                        <div class="cjs-stone-status-dropdown-panel" role="menu" hidden>
+                            <?php foreach ($stone_order_statuses as $status_key => $status_data) : ?>
+                            <label class="cjs-stone-status-checkbox-row" role="menuitem">
+                                <input type="checkbox" name="stone_order_status[]" value="<?php echo esc_attr($status_key); ?>"
+                                    <?php checked(in_array($status_key, $stone_order_status_filter)); ?> />
+                                <span class="cjs-stone-status-dot" style="background-color: <?php echo esc_attr($status_data['color'] ?? '#6c757d'); ?>;"></span>
+                                <span class="cjs-stone-status-label"><?php echo esc_html($status_data['label'] ?? $status_key); ?></span>
+                            </label>
+                            <?php endforeach; ?>
+                        </div>
+                    </div>
+                    <?php endif; ?>
                     <button type="submit" class="button"><?php _e('Filter', 'custom-jewelry-system'); ?></button>
                 </form>
             </div>
@@ -96,7 +131,7 @@ class CJS_Admin_Orders {
                 </thead>
                 <tbody>
                     <?php
-                    $orders = self::get_orders($page, $per_page, $search, $status_filter, $order_model_filter, $order_production_filter, $order_type_filter);
+                    $orders = self::get_orders($page, $per_page, $search, $status_filter, $order_model_filter, $order_production_filter, $order_type_filter, $has_stones_filter, $stone_order_status_filter);
                     
                     if (empty($orders['items'])) {
                         echo '<tr><td colspan="14">' . __('No orders found', 'custom-jewelry-system') . '</td></tr>';
@@ -137,10 +172,11 @@ class CJS_Admin_Orders {
     /**
      * Get orders with extended data (HPOS Compatible) - FIXED to exclude completed orders
      */
-    private static function get_orders($page, $per_page, $search = '', $status_filter = '', $order_model_filter = '', $order_production_filter = '', $order_type_filter = '') {
+    private static function get_orders($page, $per_page, $search = '', $status_filter = '', $order_model_filter = '', $order_production_filter = '', $order_type_filter = '', $has_stones_filter = '', $stone_order_status_filter = []) {
         global $wpdb;
         
         $offset = ($page - 1) * $per_page;
+        $order_stones_cache = [];
         
         // Use WooCommerce's order query for HPOS compatibility
         $args = [
@@ -258,20 +294,62 @@ class CJS_Admin_Orders {
             }
             $all_order_ids = $filtered_ids;
         }
+
+        // Filter by has_stones if provided (use cache to avoid duplicate fetches later)
+        if ($has_stones_filter !== '') {
+            $filtered_ids = [];
+            foreach ($all_order_ids as $order_id) {
+                $stones = isset($order_stones_cache[$order_id]) ? $order_stones_cache[$order_id] : CJS_Stone::get_by_order($order_id);
+                if (!isset($order_stones_cache[$order_id])) {
+                    $order_stones_cache[$order_id] = $stones;
+                }
+                $has_stones = !empty($stones);
+                if ((int) $has_stones_filter === 1 && $has_stones) {
+                    $filtered_ids[] = $order_id;
+                } elseif ((int) $has_stones_filter === 0 && !$has_stones) {
+                    $filtered_ids[] = $order_id;
+                }
+            }
+            $all_order_ids = $filtered_ids;
+        }
+
+        // Filter by stone order status if provided (OR logic: order has at least one stone order with any selected status)
+        if (!empty($stone_order_status_filter)) {
+            $filtered_ids = [];
+            foreach ($all_order_ids as $order_id) {
+                $stones = isset($order_stones_cache[$order_id]) ? $order_stones_cache[$order_id] : CJS_Stone::get_by_order($order_id);
+                if (!isset($order_stones_cache[$order_id])) {
+                    $order_stones_cache[$order_id] = $stones;
+                }
+                $matches = false;
+                foreach ($stones as $stone) {
+                    $stone_order = $stone->get_stone_order();
+                    if ($stone_order && in_array($stone_order->status, $stone_order_status_filter, true)) {
+                        $matches = true;
+                        break;
+                    }
+                }
+                if ($matches) {
+                    $filtered_ids[] = $order_id;
+                }
+            }
+            $all_order_ids = $filtered_ids;
+        }
         
         // Total count
         $total_orders = count($all_order_ids);
         
-        // Get order extensions and sort by delivery date
+        // Get order extensions and sort by delivery date (use cached stones when available)
         $order_data = [];
         foreach ($all_order_ids as $order_id) {
             $order = wc_get_order($order_id);
             if ($order) {
                 $ext_data = CJS_Order_Extension::get_order_extension($order_id);
+                $stones = isset($order_stones_cache[$order_id]) ? $order_stones_cache[$order_id] : CJS_Stone::get_by_order($order_id);
                 $order_data[] = [
                     'order' => $order,
                     'extension' => (object) $ext_data,
-                    'stones' => CJS_Stone::get_by_order($order_id),
+                    'stones' => $stones,
                     'items' => $order->get_items(),
                     'sort_key' => self::get_sort_key($ext_data['deliver_by_date'], $order_id)
                 ];

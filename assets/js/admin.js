@@ -1,5 +1,5 @@
 /**
- * Custom Jewelry System Admin JavaScript - FIXED VERSION
+ * Custom Jewelry System Admin JavaScript
  */
 
 (function($) {
@@ -15,6 +15,7 @@
             this.initModals();
             this.initFileUpload();
             this.initSortableOptions();
+            this.initStoneStatusDropdown();
             this.StoneManager.init();
             this.StoneOrderManager.init();
             console.log('CJS: Initialization complete');
@@ -41,6 +42,47 @@
             $(document).on('click', '.cjs-modal-close, .cjs-modal-cancel', this.closeModal);
             $(document).on('click', '.cjs-modal', function(e) {
                 if (e.target === this) CJS.closeModal();
+            });
+
+            // Stone status dropdown: close on outside click
+            $(document).on('click', function(e) {
+                if (!$(e.target).closest('.cjs-stone-status-dropdown').length) {
+                    $('.cjs-stone-status-dropdown-panel').attr('hidden', true);
+                    $('.cjs-stone-status-dropdown-trigger').attr('aria-expanded', 'false');
+                }
+            });
+        },
+
+        initStoneStatusDropdown: function() {
+            $(document).on('click', '.cjs-stone-status-dropdown-trigger', function(e) {
+                e.preventDefault();
+                e.stopPropagation();
+                var $trigger = $(this);
+                var $dropdown = $trigger.closest('.cjs-stone-status-dropdown');
+                var $panel = $dropdown.find('.cjs-stone-status-dropdown-panel');
+                var isOpen = !$panel.attr('hidden');
+                $panel.attr('hidden', isOpen);
+                $trigger.attr('aria-expanded', isOpen ? 'true' : 'false');
+            });
+            // Don't close when clicking inside the panel (checkboxes)
+            $(document).on('click', '.cjs-stone-status-dropdown-panel', function(e) {
+                e.stopPropagation();
+            });
+            // Update trigger count when checkboxes change
+            $(document).on('change', '.cjs-stone-status-dropdown-panel input[name="stone_order_status[]"]', function() {
+                var $dropdown = $(this).closest('.cjs-stone-status-dropdown');
+                var count = $dropdown.find('input[name="stone_order_status[]"]:checked').length;
+                var $trigger = $dropdown.find('.cjs-stone-status-dropdown-trigger');
+                var $countEl = $trigger.find('.cjs-stone-status-count');
+                if (count > 0) {
+                    if ($countEl.length) {
+                        $countEl.text('(' + count + ')');
+                    } else {
+                        $trigger.append('<span class="cjs-stone-status-count">(' + count + ')</span>');
+                    }
+                } else {
+                    $countEl.remove();
+                }
             });
         },
         
