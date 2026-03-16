@@ -20,12 +20,13 @@ class CJS_Size_Kit {
         add_action('woocommerce_after_checkout_billing_form', [__CLASS__, 'checkout_display'], 10, 1);
         add_action('woocommerce_checkout_update_order_meta', [__CLASS__, 'save_order_meta'], 10, 2);
         add_action('woocommerce_order_status_processing', [__CLASS__, 'maybe_auto_assign'], 10, 2);
+        add_action('woocommerce_order_status_partially-paid', [__CLASS__, 'maybe_auto_assign'], 10, 2);
         add_action('woocommerce_admin_order_data_after_billing_address', [__CLASS__, 'display_admin_notice'], 10, 1);
         add_action('wp_enqueue_scripts', [__CLASS__, 'enqueue_assets'], 20);
     }
 
     /**
-     * Auto-assign an available Matavimo Rinkinys to the order when status becomes processing (if requested and option enabled).
+     * Auto-assign an available Matavimo Rinkinys to the order when status becomes processing or partially-paid.
      */
     public static function maybe_auto_assign($order_id, $order = null) {
         if (!(bool) get_option('cjs_size_kit_auto_assign', false)) {
