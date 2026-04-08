@@ -40,11 +40,11 @@
             $(document).on('click', '.cjs-add-option-btn', this.addOption);
             $(document).on('click', '.cjs-delete-option', this.deleteOption);
             
-            // Modal management
-            $(document).on('click', '.cjs-modal-close, .cjs-modal-cancel', this.closeModal);
-            $(document).on('click', '.cjs-modal', function(e) {
-                if (e.target === this) CJS.closeModal();
-            });
+            // Modal management - only close via X button or Cancel (no accidental backdrop clicks)
+            // X button: save creation form state before closing
+            $(document).on('click', '.cjs-modal-close', this.closeModalWithSave);
+            // Cancel button: discard state and close
+            $(document).on('click', '.cjs-modal-cancel', this.closeModalWithDiscard);
 
             // Stone status dropdown: close on outside click
             $(document).on('click', function(e) {
@@ -512,8 +512,21 @@
             });
         },
         
+        stoneModalFields: [
+            'stone-type', 'stone-origin', 'stone-shape', 'stone-quantity',
+            'stone-size-value', 'stone-size-unit', 'stone-color', 'stone-setting',
+            'stone-clarity', 'stone-cut-grade', 'stone-origin-country',
+            'stone-certificate', 'stone-comment'
+        ],
+
+        stoneOrderModalFields: [
+            'stone-order-edit-id', 'stone-order-source-order-id',
+            'stone-order-number', 'stone-order-date', 'stone-order-status'
+        ],
+
         initModals: function() {
-            // Modals are created in PHP, we just ensure they're available
+            // Session state is restored when modals are opened by user action
+            // (see openStoneModal, openStoneModalFromList, openNewStoneModal, openStoneOrderModal)
         },
         
         initFileUpload: function() {
@@ -1053,6 +1066,51 @@
         closeModal: function() {
             $('.cjs-modal').hide();
         },
+
+        // X button: save form state to session, then close
+        closeModalWithSave: function() {
+            if ($('#cjs-stone-modal').is(':visible') && $('#stone-edit-mode').val() === '0') {
+                CJS.saveModalState('cjs_stone_modal_state', CJS.stoneModalFields);
+            }
+            if ($('#cjs-stone-order-modal').is(':visible')) {
+                CJS.saveModalState('cjs_stone_order_modal_state', CJS.stoneOrderModalFields);
+            }
+            CJS.closeModal();
+        },
+
+        // Cancel button: discard state and close
+        closeModalWithDiscard: function() {
+            sessionStorage.removeItem('cjs_stone_modal_state');
+            sessionStorage.removeItem('cjs_stone_order_modal_state');
+            CJS.closeModal();
+        },
+
+        // Session state helpers for creation modals
+        saveModalState: function(key, fieldIds) {
+            var state = {};
+            fieldIds.forEach(function(id) {
+                var $el = $('#' + id);
+                state[id] = $el.val() || '';
+            });
+            sessionStorage.setItem(key, JSON.stringify(state));
+        },
+
+        restoreModalState: function(key, fieldIds) {
+            var raw = sessionStorage.getItem(key);
+            if (!raw) return false;
+            try {
+                var state = JSON.parse(raw);
+                fieldIds.forEach(function(id) {
+                    if (state[id] !== undefined) {
+                        $('#' + id).val(state[id]);
+                    }
+                });
+                return true;
+            } catch(e) {
+                sessionStorage.removeItem(key);
+                return false;
+            }
+        },
         
         // Helper Functions
         showNotice: function(message, type) {
@@ -1154,12 +1212,13 @@
                 e.preventDefault();
                 var orderId = $(this).data('order-id');
                 var orderItemId = $(this).data('order-item-id') || '';
-                
+
                 $('#stone-id').val('');
                 $('#stone-order-id').val(orderId);
                 $('#stone-order-item-id').val(orderItemId);
                 $('#stone-edit-mode').val('0');
                 $('#cjs-stone-form')[0].reset();
+                $('#cjs-stone-form').data('added-from-list', false);
                 $('#cjs-stone-modal-title').text('Add Required Stone');
                 $('#cjs-stone-submit-text').text('Add Stone');
                 
@@ -1179,9 +1238,12 @@
                     $('#cjs-stone-product-info').hide();
                 }
                 
+                // Restore saved field values if any
+                CJS.restoreModalState('cjs_stone_modal_state', CJS.stoneModalFields);
+
                 $('#cjs-stone-modal').show();
             },
-            
+
             openStoneModalFromList: function(e) {
                 e.preventDefault();
                 var orderId = $(this).data('order-id');
@@ -1216,7 +1278,7 @@
                     if (response.success && response.data) {
                         $productSelect.empty();
                         $productSelect.append('<option value="">Select a product...</option>');
-                        
+
                         response.data.forEach(function(item) {
                             $productSelect.append(
                                 '<option value="' + item.id + '">' + item.name + '</option>'
@@ -1224,10 +1286,16 @@
                         });
                     }
                 });
-                
+
+                // Mark that this stone is being added from the orders list
+                $('#cjs-stone-form').data('added-from-list', true);
+
+                // Restore saved field values if any
+                CJS.restoreModalState('cjs_stone_modal_state', CJS.stoneModalFields);
+
                 $('#cjs-stone-modal').show();
             },
-            
+
             onProductSelect: function() {
                 var itemId = $(this).val();
                 var productName = $(this).find('option:selected').text();
@@ -1244,6 +1312,7 @@
                 e.preventDefault();
                 $('#stone-id').val('');
                 $('#stone-order-id').val('');
+                $('#cjs-stone-form').data('added-from-list', false);
                 $('#stone-order-item-id').val('');
                 $('#stone-edit-mode').val('0');
                 $('#cjs-stone-form')[0].reset();
@@ -1255,9 +1324,13 @@
                 
                 $('#cjs-stone-product-info').hide();
                 $('#cjs-stone-product-selector').hide();
+
+                // Restore saved field values if any
+                CJS.restoreModalState('cjs_stone_modal_state', CJS.stoneModalFields);
+
                 $('#cjs-stone-modal').show();
             },
-            
+
             editStone: function(e) {
                 e.preventDefault();
                 e.stopPropagation(); // Prevent event bubbling
@@ -1374,8 +1447,45 @@
                 .done(function(response) {
                     if (response.success) {
                         CJS.showNotice(editMode ? 'Stone updated successfully' : 'Stone added successfully', 'success');
+                        sessionStorage.removeItem('cjs_stone_modal_state');
                         CJS.closeModal();
-                        location.reload();
+
+                        // Live DOM update: insert the new stone pill into the order row if possible
+                        if (!editMode && response.data.display_string && data.order_id) {
+                            var $stonesCol = $('tr#order' + data.order_id + ' .cjs-stones-column, tr[data-order-id="' + data.order_id + '"] .cjs-stones-column').first();
+
+                            if ($stonesCol.length) {
+                                var pill = '<div class="cjs-stone-pill cjs-clickable-stone" style="background-color: #f8f9fa;" ' +
+                                    'data-stone-id="' + response.data.stone_id + '">' +
+                                    $('<span>').text(response.data.display_string).html() + '</div>';
+
+                                var itemId = response.data.order_item_id;
+                                var productName = response.data.product_name;
+                                var inserted = false;
+
+                                if (itemId && productName) {
+                                    $stonesCol.find('.cjs-product-stone-group').each(function() {
+                                        var label = $(this).find('.cjs-product-label').text();
+                                        if (label.indexOf(productName) !== -1) {
+                                            $(this).append(pill);
+                                            inserted = true;
+                                            return false;
+                                        }
+                                    });
+                                    if (!inserted) {
+                                        var group = '<div class="cjs-product-stone-group">' +
+                                            '<small class="cjs-product-label">' + $('<span>').text(productName).html() + ':</small><br>' +
+                                            pill + '</div>';
+                                        $stonesCol.find('.cjs-add-stone-from-list').before(group);
+                                        inserted = true;
+                                    }
+                                }
+
+                                if (!inserted) {
+                                    $stonesCol.find('.cjs-add-stone-from-list').before(pill);
+                                }
+                            }
+                        }
                     } else {
                         CJS.showNotice('Error: ' + response.data.message, 'error');
                     }
@@ -1634,9 +1744,12 @@
                     CJS.StoneOrderManager.loadAvailableStones();
                 }
                 
+                // Restore saved field values if any
+                CJS.restoreModalState('cjs_stone_order_modal_state', CJS.stoneOrderModalFields);
+
                 $('#cjs-stone-order-modal').show();
             },
-            
+
             loadAvailableStonesForOrder: function(orderId, selectedIds) {
                 selectedIds = selectedIds || [];
                 
@@ -1976,6 +2089,7 @@
                     if (response.success) {
                         var message = response.data.message || (isEdit ? 'Stone order updated successfully' : 'Stone order created successfully');
                         CJS.showNotice(message, 'success');
+                        sessionStorage.removeItem('cjs_stone_order_modal_state');
                         CJS.closeModal();
                         location.reload();
                     } else {

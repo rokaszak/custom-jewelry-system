@@ -628,13 +628,38 @@ class CJS_REST_API {
     error_log('custom_comment: ' . $stone->get('custom_comment'));
     
     $stone_id = $stone->save();
-    
+
     if (!$stone_id) {
         wp_send_json_error(['message' => 'Failed to create stone']);
         return;
     }
-    
-    wp_send_json_success(['stone_id' => $stone_id]);
+
+    // Return display data for live DOM update
+    $created_stone = new CJS_Stone($stone_id);
+    $display_string = $created_stone->get_display_string();
+
+    // Get product name if assigned to an order item
+    $product_name = '';
+    $order_item_id = $created_stone->get('order_item_id');
+    $order_id = $created_stone->get('order_id');
+    if ($order_item_id && $order_id) {
+        $order = wc_get_order($order_id);
+        if ($order) {
+            foreach ($order->get_items() as $item) {
+                if ($item->get_id() == $order_item_id) {
+                    $product_name = $item->get_name();
+                    break;
+                }
+            }
+        }
+    }
+
+    wp_send_json_success([
+        'stone_id' => $stone_id,
+        'display_string' => $display_string,
+        'product_name' => $product_name,
+        'order_item_id' => intval($order_item_id),
+    ]);
 }
     
     /**
