@@ -185,19 +185,25 @@ class CJS_Stone_Order {
         ));
         
         if (!$exists) {
-            // Check if in_cart column exists
+            // Check which junction columns exist
             $columns = $wpdb->get_col("SHOW COLUMNS FROM {$wpdb->prefix}cjs_stone_order_items");
             $has_in_cart_column = in_array('in_cart', $columns);
-            
+            $has_received_column = in_array('received', $columns);
+
             $insert_data = [
                 'stone_id' => $stone_id,
                 'stone_order_id' => $this->id
             ];
-            
+
             $format = ['%d', '%d'];
-            
+
             if ($has_in_cart_column) {
                 $insert_data['in_cart'] = 0;
+                $format[] = '%d';
+            }
+
+            if ($has_received_column) {
+                $insert_data['received'] = 0;
                 $format[] = '%d';
             }
             
@@ -255,38 +261,37 @@ class CJS_Stone_Order {
             return [];
         }
         
-        // First check if in_cart column exists
+        // Check which junction columns exist (older installs may be mid-migration)
         $columns = $wpdb->get_col("SHOW COLUMNS FROM {$wpdb->prefix}cjs_stone_order_items");
         $has_in_cart_column = in_array('in_cart', $columns);
-        
+        $has_received_column = in_array('received', $columns);
+
+        // Build the SELECT list dynamically so we only reference existing columns
+        $extra_select = '';
         if ($has_in_cart_column) {
-            // Use the new query with in_cart column
-            $results = $wpdb->get_results($wpdb->prepare(
-                "SELECT s.*, soi.in_cart FROM {$wpdb->prefix}cjs_stones s
-                 INNER JOIN {$wpdb->prefix}cjs_stone_order_items soi ON s.id = soi.stone_id
-                 WHERE soi.stone_order_id = %d
-                 ORDER BY s.id DESC",
-                $this->id
-            ));
-        } else {
-            // Fallback to old query without in_cart column
-            $results = $wpdb->get_results($wpdb->prepare(
-                "SELECT s.* FROM {$wpdb->prefix}cjs_stones s
-                 INNER JOIN {$wpdb->prefix}cjs_stone_order_items soi ON s.id = soi.stone_id
-                 WHERE soi.stone_order_id = %d
-                 ORDER BY s.id DESC",
-                $this->id
-            ));
+            $extra_select .= ', soi.in_cart';
         }
-        
+        if ($has_received_column) {
+            $extra_select .= ', soi.received';
+        }
+
+        $results = $wpdb->get_results($wpdb->prepare(
+            "SELECT s.*{$extra_select} FROM {$wpdb->prefix}cjs_stones s
+             INNER JOIN {$wpdb->prefix}cjs_stone_order_items soi ON s.id = soi.stone_id
+             WHERE soi.stone_order_id = %d
+             ORDER BY s.id DESC",
+            $this->id
+        ));
+
         $stones = [];
         foreach ($results as $result) {
             $stone = CJS_Stone::from_row($result);
-            // Add in_cart property to the stone object (default to 0 if column doesn't exist)
+            // Add junction properties to the stone object (default to 0 if column doesn't exist)
             $stone->set('in_cart', $has_in_cart_column ? $result->in_cart : 0);
+            $stone->set('received', $has_received_column ? $result->received : 0);
             $stones[] = $stone;
         }
-        
+
         return $stones;
     }
     
@@ -325,10 +330,49 @@ class CJS_Stone_Order {
             ]);
             return true;
         }
-        
+
         return false;
     }
-    
+
+    /**
+     * Update received status for a stone in this order
+     */
+    public function update_stone_received($stone_id, $received) {
+        global $wpdb;
+
+        if (!$this->id || !$stone_id) {
+            return false;
+        }
+
+        // Check if received column exists
+        $columns = $wpdb->get_col("SHOW COLUMNS FROM {$wpdb->prefix}cjs_stone_order_items");
+        if (!in_array('received', $columns)) {
+            error_log("CJS: received column does not exist in stone_order_items table");
+            return false;
+        }
+
+        $result = $wpdb->update(
+            $wpdb->prefix . 'cjs_stone_order_items',
+            ['received' => $received ? 1 : 0],
+            [
+                'stone_id' => $stone_id,
+                'stone_order_id' => $this->id
+            ],
+            ['%d'],
+            ['%d', '%d']
+        );
+
+        if ($result !== false) {
+            CJS_Logger::log('Stone received status updated', 'info', 'stone_order', $this->id, [
+                'stone_id' => $stone_id,
+                'received' => $received
+            ]);
+            return true;
+        }
+
+        return false;
+    }
+
     /**
      * Get related WooCommerce orders
      */

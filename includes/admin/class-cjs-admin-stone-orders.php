@@ -157,19 +157,34 @@ class CJS_Admin_Stone_Orders {
                 
                 if (!empty($stones)) {
                     $in_cart_count = 0;
+                    $received_count = 0;
                     foreach ($stones as $stone) {
                         if ($stone->get('in_cart')) {
                             $in_cart_count++;
                         }
+                        if ($stone->get('received')) {
+                            $received_count++;
+                        }
                     }
-                    
+
                     if ($in_cart_count > 0) {
                         echo '<br><small style="color: #0073aa;">' . sprintf(__('%d in cart', 'custom-jewelry-system'), $in_cart_count) . '</small>';
                     }
-                    
+
+                    if ($received_count > 0) {
+                        echo '<br><small style="color: #28a745;">' . sprintf(__('%d received', 'custom-jewelry-system'), $received_count) . '</small>';
+                    }
+
                     echo '<div class="cjs-stone-summary">';
                     foreach ($stones as $stone) {
-                        $bg_color = $stone->get('in_cart') ? '#0073aa20' : '#f8f9fa';
+                        // Received wins over in-cart for the pill color
+                        if ($stone->get('received')) {
+                            $bg_color = '#28a74520';
+                        } elseif ($stone->get('in_cart')) {
+                            $bg_color = '#0073aa20';
+                        } else {
+                            $bg_color = '#f8f9fa';
+                        }
                         echo '<div class="cjs-stone-pill cjs-clickable-stone" data-stone-id="' . esc_attr($stone->get_id()) . '" style="background-color: ' . esc_attr($bg_color) . ';">';
                         echo esc_html($stone->get_display_string()); // Now includes formatted size
                         echo '</div>';
@@ -306,6 +321,7 @@ class CJS_Admin_Stone_Orders {
                                     <th><?php _e('Size', 'custom-jewelry-system'); ?></th>
                                     <th><?php _e('Related Order', 'custom-jewelry-system'); ?></th>
                                     <th><?php _e('In Cart', 'custom-jewelry-system'); ?></th>
+                                    <th><?php _e('Received', 'custom-jewelry-system'); ?></th>
                                     <th><?php _e('Actions', 'custom-jewelry-system'); ?></th>
                                 </tr>
                             </thead>
@@ -317,6 +333,9 @@ class CJS_Admin_Stone_Orders {
                                                 <strong><?php echo esc_html($stone->get_display_string()); ?></strong>
                                                 <?php if ($stone->get('in_cart')): ?>
                                                     <span style="color: #0073aa; font-size: 11px; margin-left: 5px;">● In Cart</span>
+                                                <?php endif; ?>
+                                                <?php if ($stone->get('received')): ?>
+                                                    <span style="color: #28a745; font-size: 11px; margin-left: 5px;">● Received</span>
                                                 <?php endif; ?>
                                             </a>
                                             <?php if ($stone->get('custom_comment')): ?>
@@ -352,14 +371,21 @@ class CJS_Admin_Stone_Orders {
                                             ?>
                                         </td>
                                         <td>
-                                            <input type="checkbox" class="cjs-inline-edit" 
-                                                   data-field="in_cart" 
+                                            <input type="checkbox" class="cjs-inline-edit"
+                                                   data-field="in_cart"
                                                    data-stone-id="<?php echo esc_attr($stone->get_id()); ?>"
                                                    data-stone-order-id="<?php echo esc_attr($stone_order->get('id')); ?>"
                                                    <?php checked($stone->get('in_cart'), 1); ?> />
                                         </td>
                                         <td>
-                                            <button type="button" class="button button-small cjs-edit-stone" 
+                                            <input type="checkbox" class="cjs-inline-edit"
+                                                   data-field="received"
+                                                   data-stone-id="<?php echo esc_attr($stone->get_id()); ?>"
+                                                   data-stone-order-id="<?php echo esc_attr($stone_order->get('id')); ?>"
+                                                   <?php checked($stone->get('received'), 1); ?> />
+                                        </td>
+                                        <td>
+                                            <button type="button" class="button button-small cjs-edit-stone"
                                                     data-stone-id="<?php echo esc_attr($stone->get_id()); ?>">
                                                 <?php _e('Edit', 'custom-jewelry-system'); ?>
                                             </button>

@@ -93,11 +93,13 @@ class CJS_Install {
             stone_id bigint(20) unsigned NOT NULL,
             stone_order_id bigint(20) unsigned NOT NULL,
             in_cart tinyint(1) DEFAULT 0,
+            received tinyint(1) DEFAULT 0,
             created_at datetime DEFAULT CURRENT_TIMESTAMP,
             PRIMARY KEY (id),
             UNIQUE KEY stone_order (stone_id, stone_order_id),
             KEY stone_order_id (stone_order_id),
-            KEY in_cart (in_cart)
+            KEY in_cart (in_cart),
+            KEY received (received)
         ) $charset_collate;";
         
         // Order extensions table
@@ -275,7 +277,7 @@ class CJS_Install {
         if (!in_array('in_cart', $columns)) {
             error_log("CJS: Adding in_cart column to {$table_name}");
             $result = $wpdb->query("ALTER TABLE {$table_name} ADD COLUMN in_cart tinyint(1) DEFAULT 0 AFTER stone_order_id");
-            
+
             if ($result !== false) {
                 error_log("CJS: Successfully added in_cart column to stone_order_items table");
             } else {
@@ -283,6 +285,20 @@ class CJS_Install {
             }
         } else {
             error_log("CJS: in_cart column already exists in {$table_name}");
+        }
+
+        // Add received column if it doesn't exist
+        if (!in_array('received', $columns)) {
+            error_log("CJS: Adding received column to {$table_name}");
+            $result = $wpdb->query("ALTER TABLE {$table_name} ADD COLUMN received tinyint(1) DEFAULT 0 AFTER in_cart");
+
+            if ($result !== false) {
+                error_log("CJS: Successfully added received column to stone_order_items table");
+            } else {
+                error_log("CJS: Failed to add received column. Error: " . $wpdb->last_error);
+            }
+        } else {
+            error_log("CJS: received column already exists in {$table_name}");
         }
     }
 

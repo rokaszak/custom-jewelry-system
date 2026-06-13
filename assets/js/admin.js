@@ -392,8 +392,8 @@
                 var orderId = $this.data('order-id');
                 var stoneOrderId = $this.data('stone-order-id');
                 
-                // Skip if this is an in_cart field - it has its own handler
-                if (field === 'in_cart') {
+                // Skip in_cart / received fields - they have their own handlers
+                if (field === 'in_cart' || field === 'received') {
                     return;
                 }
                 
@@ -448,7 +448,42 @@
                     $this.removeClass('cjs-loading');
                 });
             });
-            
+
+            // Stone received checkbox handling
+            $(document).on('change', '.cjs-inline-edit[data-field="received"]', function() {
+                var $this = $(this);
+                var stoneId = $this.data('stone-id');
+                var stoneOrderId = $this.data('stone-order-id');
+                var value = $this.is(':checked') ? 1 : 0;
+
+                $this.addClass('cjs-loading');
+
+                $.post(cjs_ajax.ajax_url, {
+                    action: 'cjs_update_stone_received',
+                    nonce: cjs_ajax.nonce,
+                    stone_id: stoneId,
+                    stone_order_id: stoneOrderId,
+                    value: value
+                })
+                .done(function(response) {
+                    if (response.success) {
+                        CJS.showNotice('Received status updated', 'success');
+                    } else {
+                        CJS.showNotice('Update failed: ' + response.data.message, 'error');
+                        // Revert the checkbox state
+                        $this.prop('checked', !value);
+                    }
+                })
+                .fail(function() {
+                    CJS.showNotice('Error updating received status', 'error');
+                    // Revert the checkbox state
+                    $this.prop('checked', !value);
+                })
+                .always(function() {
+                    $this.removeClass('cjs-loading');
+                });
+            });
+
             // Stone inline editing - UPDATED for size units
             $(document).on('change', '.cjs-inline-stone-edit', function() {
                 var $this = $(this);

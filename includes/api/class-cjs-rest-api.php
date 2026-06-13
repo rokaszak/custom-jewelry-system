@@ -26,6 +26,7 @@ class CJS_REST_API {
         add_action('wp_ajax_cjs_delete_stone_order', [__CLASS__, 'ajax_delete_stone_order']);
         add_action('wp_ajax_cjs_manage_stone_order', [__CLASS__, 'ajax_manage_stone_order']);
         add_action('wp_ajax_cjs_update_stone_in_cart', [__CLASS__, 'ajax_update_stone_in_cart']);
+        add_action('wp_ajax_cjs_update_stone_received', [__CLASS__, 'ajax_update_stone_received']);
         add_action('wp_ajax_cjs_find_stone_order', [__CLASS__, 'ajax_find_stone_order']);
         add_action('wp_ajax_cjs_get_whatsapp_message', [__CLASS__, 'ajax_get_whatsapp_message']);
         add_action('wp_ajax_cjs_add_option', [__CLASS__, 'ajax_add_option']);
@@ -966,15 +967,47 @@ class CJS_REST_API {
         }
         
         $result = $order->update_stone_in_cart($stone_id, $in_cart);
-        
+
         if (!$result) {
             wp_send_json_error(['message' => 'Failed to update in_cart status']);
             return;
         }
-        
+
         wp_send_json_success(['message' => 'In cart status updated']);
     }
-    
+
+    /**
+     * AJAX: Update stone received status
+     */
+    public static function ajax_update_stone_received() {
+        if (!wp_verify_nonce($_POST['nonce'], 'wp_rest')) {
+            wp_send_json_error(['message' => 'Invalid nonce']);
+            return;
+        }
+
+        self::check_permission();
+
+        $stone_id = absint($_POST['stone_id']);
+        $stone_order_id = absint($_POST['stone_order_id']);
+        $received = isset($_POST['value']) ? (bool) $_POST['value'] : false;
+
+        $order = new CJS_Stone_Order($stone_order_id);
+
+        if (!$order->get_id()) {
+            wp_send_json_error(['message' => 'Stone order not found']);
+            return;
+        }
+
+        $result = $order->update_stone_received($stone_id, $received);
+
+        if (!$result) {
+            wp_send_json_error(['message' => 'Failed to update received status']);
+            return;
+        }
+
+        wp_send_json_success(['message' => 'Received status updated']);
+    }
+
     /**
      * AJAX: Get WhatsApp message
      */
