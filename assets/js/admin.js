@@ -56,6 +56,9 @@
 
             // Size Kit settings save
             $(document).on('submit', '#cjs-size-kit-settings-form', this.saveSizeKitSettings);
+
+            $(document).on('submit', '#cjs-order-types-settings-form', this.saveOrderTypeSettings);
+            $(document).on('change', '.cjs-order-type-categories input[type="checkbox"]', this.enforceUniqueOrderTypeCategory);
         },
 
         initHighlightFromHash: function() {
@@ -348,6 +351,46 @@
                 .always(function() {
                     $btn.prop('disabled', false);
                 });
+        },
+
+        saveOrderTypeSettings: function(e) {
+            e.preventDefault();
+            var $form = $('#cjs-order-types-settings-form');
+            var $btn = $form.find('#cjs-order-types-save-btn');
+            var $status = $form.find('.cjs-order-types-save-status');
+
+            var formData = $form.serialize();
+            formData += '&action=cjs_save_order_type_settings';
+
+            $btn.prop('disabled', true);
+            $status.removeClass('cjs-error cjs-success').text('');
+
+            $.post(cjs_ajax.ajax_url, formData)
+                .done(function(response) {
+                    if (response.success) {
+                        $status.addClass('cjs-success').text(response.data && response.data.message ? response.data.message : 'Saved.');
+                    } else {
+                        $status.addClass('cjs-error').text(response.data && response.data.message ? response.data.message : 'Error.');
+                    }
+                })
+                .fail(function() {
+                    $status.addClass('cjs-error').text(cjs_ajax.strings && cjs_ajax.strings.error ? cjs_ajax.strings.error : 'Error.');
+                })
+                .always(function() {
+                    $btn.prop('disabled', false);
+                });
+        },
+
+        enforceUniqueOrderTypeCategory: function() {
+            var $checkbox = $(this);
+            if (!$checkbox.prop('checked')) {
+                return;
+            }
+            var value = $checkbox.val();
+            var $group = $checkbox.closest('.cjs-order-type-categories');
+            $('.cjs-order-type-categories').not($group).find('input[type="checkbox"]').filter(function() {
+                return $(this).val() === value;
+            }).prop('checked', false);
         },
 
         initStoneStatusDropdown: function() {

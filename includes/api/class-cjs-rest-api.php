@@ -46,6 +46,7 @@ class CJS_REST_API {
         add_action('wp_ajax_cjs_download_file', [__CLASS__, 'handle_file_download']);
         add_action('wp_ajax_cjs_update_options_order', [__CLASS__, 'ajax_update_options_order']);
         add_action('wp_ajax_cjs_save_size_kit_settings', [__CLASS__, 'ajax_save_size_kit_settings']);
+        add_action('wp_ajax_cjs_save_order_type_settings', [__CLASS__, 'ajax_save_order_type_settings']);
         // Inventory item handlers
         add_action('wp_ajax_cjs_create_inventory_item', [__CLASS__, 'ajax_create_inventory_item']);
         add_action('wp_ajax_cjs_update_inventory_item', [__CLASS__, 'ajax_update_inventory_item']);
@@ -1492,6 +1493,43 @@ class CJS_REST_API {
         update_option('cjs_size_kit_categories', $categories);
         update_option('cjs_size_kit_modal_text', $modal_text);
         update_option('cjs_size_kit_auto_assign', $auto_assign);
+
+        wp_send_json_success(['message' => __('Settings saved.', 'custom-jewelry-system')]);
+    }
+
+    public static function ajax_save_order_type_settings() {
+        if (!isset($_POST['cjs_order_types_nonce']) || !wp_verify_nonce(sanitize_text_field(wp_unslash($_POST['cjs_order_types_nonce'])), 'cjs_save_order_type_settings')) {
+            wp_send_json_error(['message' => 'Invalid nonce']);
+            return;
+        }
+
+        self::check_permission();
+
+        $enabled = !empty($_POST['cjs_order_type_auto_assign_enabled']);
+
+        $raw = [];
+        if (!empty($_POST['cjs_order_type_categories']) && is_array($_POST['cjs_order_type_categories'])) {
+            $raw = wp_unslash($_POST['cjs_order_type_categories']);
+        }
+
+        $order_types = CJS_Order_Extension::get_ordered_options('order_types');
+        $map = [];
+        $used = [];
+        foreach ($order_types as $type) {
+            if (empty($raw[$type]) || !is_array($raw[$type])) {
+                continue;
+            }
+            $term_ids = array_values(array_unique(array_filter(array_map('absint', $raw[$type]))));
+            $term_ids = array_values(array_diff($term_ids, $used));
+            if (empty($term_ids)) {
+                continue;
+            }
+            $map[$type] = $term_ids;
+            $used = array_merge($used, $term_ids);
+        }
+
+        update_option('cjs_order_type_auto_assign_enabled', $enabled);
+        update_option('cjs_order_type_category_map', $map);
 
         wp_send_json_success(['message' => __('Settings saved.', 'custom-jewelry-system')]);
     }

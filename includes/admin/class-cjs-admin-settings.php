@@ -27,7 +27,11 @@ class CJS_Admin_Settings {
                    class="nav-tab <?php echo $active_tab === 'size_kit' ? 'nav-tab-active' : ''; ?>">
                     <?php _e('Size Kit', 'custom-jewelry-system'); ?>
                 </a>
-                <a href="?page=cjs-settings&tab=log" 
+                <a href="?page=cjs-settings&tab=order_types"
+                   class="nav-tab <?php echo $active_tab === 'order_types' ? 'nav-tab-active' : ''; ?>">
+                    <?php _e('Order Types', 'custom-jewelry-system'); ?>
+                </a>
+                <a href="?page=cjs-settings&tab=log"
                    class="nav-tab <?php echo $active_tab === 'log' ? 'nav-tab-active' : ''; ?>">
                     <?php _e('Activity Log', 'custom-jewelry-system'); ?>
                 </a>
@@ -39,6 +43,8 @@ class CJS_Admin_Settings {
                     self::render_options_tab();
                 } elseif ($active_tab === 'size_kit') {
                     self::render_size_kit_tab();
+                } elseif ($active_tab === 'order_types') {
+                    self::render_order_types_tab();
                 } else {
                     self::render_log_tab();
                 }
@@ -267,6 +273,63 @@ class CJS_Admin_Settings {
         <?php
     }
     
+    private static function render_order_types_tab() {
+        $enabled = CJS_Order_Type_Assigner::is_enabled();
+        $map = CJS_Order_Type_Assigner::get_category_map();
+        $order_types = CJS_Order_Extension::get_ordered_options('order_types');
+
+        $product_cats = get_terms([
+            'taxonomy'   => 'product_cat',
+            'hide_empty' => false,
+            'orderby'   => 'name',
+        ]);
+        if (is_wp_error($product_cats)) {
+            $product_cats = [];
+        }
+        ?>
+        <div class="cjs-order-types-settings">
+            <form id="cjs-order-types-settings-form" class="cjs-order-types-settings-form">
+                <?php wp_nonce_field('cjs_save_order_type_settings', 'cjs_order_types_nonce'); ?>
+
+                <div class="cjs-option-section">
+                    <h3><?php _e('Automatic order type assignment', 'custom-jewelry-system'); ?></h3>
+                    <p>
+                        <label>
+                            <input type="checkbox" name="cjs_order_type_auto_assign_enabled" value="1" <?php checked($enabled, true); ?> />
+                            <?php _e('Automatically assign an order type to new orders based on the product categories below', 'custom-jewelry-system'); ?>
+                        </label>
+                    </p>
+                    <p class="description"><?php _e('When a new order contains products from a mapped category, the matching order type is assigned. The most repeated category wins (quantities count), ties go to the most parent category, then to the category on the most expensive line. A category mapped to a parent also matches its subcategories. Each category can belong to only one order type.', 'custom-jewelry-system'); ?></p>
+                </div>
+
+                <?php foreach ($order_types as $type) : ?>
+                <div class="cjs-option-section">
+                    <h3><?php echo esc_html($type); ?></h3>
+                    <div class="cjs-order-type-categories">
+                        <?php
+                        $selected = isset($map[$type]) ? array_map('absint', $map[$type]) : [];
+                        foreach ($product_cats as $term) :
+                        ?>
+                        <label class="cjs-order-type-cat-label">
+                            <input type="checkbox" name="cjs_order_type_categories[<?php echo esc_attr($type); ?>][]"
+                                   value="<?php echo esc_attr($term->term_id); ?>"
+                                <?php checked(in_array((int) $term->term_id, $selected, true)); ?> />
+                            <?php echo esc_html($term->name); ?>
+                        </label>
+                        <?php endforeach; ?>
+                    </div>
+                </div>
+                <?php endforeach; ?>
+
+                <p>
+                    <button type="submit" class="button button-primary" id="cjs-order-types-save-btn"><?php _e('Save Order Type settings', 'custom-jewelry-system'); ?></button>
+                    <span class="cjs-order-types-save-status" style="margin-left: 10px;"></span>
+                </p>
+            </form>
+        </div>
+        <?php
+    }
+
     /**
      * Render single option item
      */
