@@ -106,6 +106,7 @@ class CJS_Install {
         $sql_order_extensions = "CREATE TABLE {$wpdb->prefix}cjs_order_extensions (
             id bigint(20) unsigned NOT NULL AUTO_INCREMENT,
             order_id bigint(20) unsigned NOT NULL,
+            manufacture_by_date date DEFAULT NULL,
             finish_by_date date DEFAULT NULL,
             deliver_by_date date DEFAULT NULL,
             order_model tinyint(1) DEFAULT 0,
@@ -218,6 +219,10 @@ class CJS_Install {
             if (!in_array('order_type', $columns)) {
                 $wpdb->query("ALTER TABLE {$wpdb->prefix}cjs_order_extensions ADD COLUMN order_type varchar(100) DEFAULT 'Įprastas' AFTER manufacturing_status");
                 error_log("CJS: Added order_type column to existing table");
+            }
+            if (!in_array('manufacture_by_date', $columns)) {
+                $wpdb->query("ALTER TABLE {$wpdb->prefix}cjs_order_extensions ADD COLUMN manufacture_by_date date DEFAULT NULL AFTER order_id");
+                error_log("CJS: Added manufacture_by_date column to existing table");
             }
         }
         

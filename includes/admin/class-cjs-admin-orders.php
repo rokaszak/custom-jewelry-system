@@ -30,7 +30,8 @@ class CJS_Admin_Orders {
                 $stone_order_status_filter = array_map('sanitize_text_field', $_GET['stone_order_status']);
                 $stone_order_status_filter = array_filter($stone_order_status_filter);
             }
-            $page = self::get_page_for_order($highlight_order, 20, $search, $status_filter, $order_model_filter, $order_production_filter, $order_type_filter, $has_stones_filter, $stone_order_status_filter, $has_size_kit_filter);
+            $date_filters = self::get_date_filters();
+            $page = self::get_page_for_order($highlight_order, 20, $search, $status_filter, $order_model_filter, $order_production_filter, $order_type_filter, $has_stones_filter, $stone_order_status_filter, $has_size_kit_filter, $date_filters);
             $redirect_args = array_merge($_GET, ['page' => 'cjs-orders-list', 'paged' => $page]);
             unset($redirect_args['highlight_order']);
             wp_redirect(add_query_arg($redirect_args, admin_url('admin.php')) . '#order' . $highlight_order);
@@ -50,6 +51,7 @@ class CJS_Admin_Orders {
             $stone_order_status_filter = array_map('sanitize_text_field', $_GET['stone_order_status']);
             $stone_order_status_filter = array_filter($stone_order_status_filter);
         }
+        $date_filters = self::get_date_filters();
         $page = isset($_GET['paged']) ? max(1, intval($_GET['paged'])) : 1;
         $per_page = 20;
         
@@ -134,6 +136,24 @@ class CJS_Admin_Orders {
                         </div>
                     </div>
                     <?php endif; ?>
+                    <span class="cjs-date-filter-group">
+                        <label><?php _e('Pagaminti iki', 'custom-jewelry-system'); ?></label>
+                        <input type="date" name="manufacture_from" value="<?php echo esc_attr($date_filters['manufacture_from']); ?>" />
+                        <span>–</span>
+                        <input type="date" name="manufacture_to" value="<?php echo esc_attr($date_filters['manufacture_to']); ?>" />
+                    </span>
+                    <span class="cjs-date-filter-group">
+                        <label><?php _e('Užprabuoti iki', 'custom-jewelry-system'); ?></label>
+                        <input type="date" name="finish_from" value="<?php echo esc_attr($date_filters['finish_from']); ?>" />
+                        <span>–</span>
+                        <input type="date" name="finish_to" value="<?php echo esc_attr($date_filters['finish_to']); ?>" />
+                    </span>
+                    <span class="cjs-date-filter-group">
+                        <label><?php _e('Pristatyti iki', 'custom-jewelry-system'); ?></label>
+                        <input type="date" name="deliver_from" value="<?php echo esc_attr($date_filters['deliver_from']); ?>" />
+                        <span>–</span>
+                        <input type="date" name="deliver_to" value="<?php echo esc_attr($date_filters['deliver_to']); ?>" />
+                    </span>
                     <button type="submit" class="button"><?php _e('Filter', 'custom-jewelry-system'); ?></button>
                 </form>
             </div>
@@ -141,29 +161,30 @@ class CJS_Admin_Orders {
             <table class="wp-list-table widefat fixed striped cjs-orders-table">
                 <thead>
                     <tr>
-                        <th><?php _e('Order', 'custom-jewelry-system'); ?></th>
+                        <th class="cjs-col-order"><?php _e('Order', 'custom-jewelry-system'); ?></th>
                         <th><?php _e('Customer', 'custom-jewelry-system'); ?></th>
-                        <th><?php _e('Užprabuoti iki', 'custom-jewelry-system'); ?></th>
-                        <th><?php _e('Pristatyti iki', 'custom-jewelry-system'); ?></th>
-                        <th><?php _e('Dienos liko', 'custom-jewelry-system'); ?></th>
-                        <th><?php _e('Užsakyti modelį', 'custom-jewelry-system'); ?></th>
-                        <th><?php _e('Užsakyti gamybą', 'custom-jewelry-system'); ?></th>
+                        <th class="cjs-col-date"><?php _e('Pagaminti iki', 'custom-jewelry-system'); ?></th>
+                        <th class="cjs-col-date"><?php _e('Užprabuoti iki', 'custom-jewelry-system'); ?></th>
+                        <th class="cjs-col-date"><?php _e('Pristatyti iki', 'custom-jewelry-system'); ?></th>
+                        <th class="cjs-col-days"><?php _e('Dienos liko', 'custom-jewelry-system'); ?></th>
+                        <th class="cjs-col-check"><?php _e('Užsakyti modelį', 'custom-jewelry-system'); ?></th>
+                        <th class="cjs-col-check"><?php _e('Užsakyti gamybą', 'custom-jewelry-system'); ?></th>
                         <th><?php _e('Liejimas', 'custom-jewelry-system'); ?></th>
                         <th><?php _e('Reikalingi akmenys', 'custom-jewelry-system'); ?></th>
                         <th><?php _e('Akmenų užsakymas', 'custom-jewelry-system'); ?></th>
                         <th><?php _e('Priskirtas inventorius', 'custom-jewelry-system'); ?></th>
                         <th><?php _e('Statusas', 'custom-jewelry-system'); ?></th>
                         <th><?php _e('Užsakymo tipas', 'custom-jewelry-system'); ?></th>
-                        <th><?php _e('Spauda', 'custom-jewelry-system'); ?></th>
-                        <th><?php _e('Actions', 'custom-jewelry-system'); ?></th>
+                        <th class="cjs-col-check"><?php _e('Spauda', 'custom-jewelry-system'); ?></th>
+                        <th class="cjs-col-actions"><?php _e('Actions', 'custom-jewelry-system'); ?></th>
                     </tr>
                 </thead>
                 <tbody>
                     <?php
-                    $orders = self::get_orders($page, $per_page, $search, $status_filter, $order_model_filter, $order_production_filter, $order_type_filter, $has_stones_filter, $stone_order_status_filter, $has_size_kit_filter);
+                    $orders = self::get_orders($page, $per_page, $search, $status_filter, $order_model_filter, $order_production_filter, $order_type_filter, $has_stones_filter, $stone_order_status_filter, $has_size_kit_filter, $date_filters);
                     
                     if (empty($orders['items'])) {
-                        echo '<tr><td colspan="15">' . __('No orders found', 'custom-jewelry-system') . '</td></tr>';
+                        echo '<tr><td colspan="16">' . __('No orders found', 'custom-jewelry-system') . '</td></tr>';
                     } else {
                         foreach ($orders['items'] as $order_data) {
                             self::render_order_row($order_data);
@@ -201,7 +222,7 @@ class CJS_Admin_Orders {
     /**
      * Get orders with extended data (HPOS Compatible) - FIXED to exclude completed orders
      */
-    private static function get_orders($page, $per_page, $search = '', $status_filter = '', $order_model_filter = '', $order_production_filter = '', $order_type_filter = '', $has_stones_filter = '', $stone_order_status_filter = [], $has_size_kit_filter = '', $get_all = false) {
+    private static function get_orders($page, $per_page, $search = '', $status_filter = '', $order_model_filter = '', $order_production_filter = '', $order_type_filter = '', $has_stones_filter = '', $stone_order_status_filter = [], $has_size_kit_filter = '', $date_filters = [], $get_all = false) {
         global $wpdb;
         
         $offset = ($page - 1) * $per_page;
@@ -398,6 +419,35 @@ class CJS_Admin_Orders {
             $all_order_ids = $filtered_ids;
         }
         
+        $date_ranges = [
+            'manufacture_by_date' => ['manufacture_from', 'manufacture_to'],
+            'finish_by_date' => ['finish_from', 'finish_to'],
+            'deliver_by_date' => ['deliver_from', 'deliver_to'],
+        ];
+        foreach ($date_ranges as $ext_field => $range_keys) {
+            $from = $date_filters[$range_keys[0]] ?? '';
+            $to = $date_filters[$range_keys[1]] ?? '';
+            if ($from === '' && $to === '') {
+                continue;
+            }
+            $filtered_ids = [];
+            foreach ($all_order_ids as $order_id) {
+                $ext_data = CJS_Order_Extension::get_order_extension($order_id);
+                $value = $ext_data[$ext_field] ?? '';
+                if ($value === '') {
+                    continue;
+                }
+                if ($from !== '' && $value < $from) {
+                    continue;
+                }
+                if ($to !== '' && $value > $to) {
+                    continue;
+                }
+                $filtered_ids[] = $order_id;
+            }
+            $all_order_ids = $filtered_ids;
+        }
+
         // Total count
         $total_orders = count($all_order_ids);
         
@@ -448,8 +498,8 @@ class CJS_Admin_Orders {
     /**
      * Get the page number that contains the given order (for deep-linking).
      */
-    public static function get_page_for_order($order_id, $per_page = 20, $search = '', $status_filter = '', $order_model_filter = '', $order_production_filter = '', $order_type_filter = '', $has_stones_filter = '', $stone_order_status_filter = [], $has_size_kit_filter = '') {
-        $result = self::get_orders(1, $per_page, $search, $status_filter, $order_model_filter, $order_production_filter, $order_type_filter, $has_stones_filter, $stone_order_status_filter, $has_size_kit_filter, true);
+    public static function get_page_for_order($order_id, $per_page = 20, $search = '', $status_filter = '', $order_model_filter = '', $order_production_filter = '', $order_type_filter = '', $has_stones_filter = '', $stone_order_status_filter = [], $has_size_kit_filter = '', $date_filters = []) {
+        $result = self::get_orders(1, $per_page, $search, $status_filter, $order_model_filter, $order_production_filter, $order_type_filter, $has_stones_filter, $stone_order_status_filter, $has_size_kit_filter, $date_filters, true);
         foreach ($result['items'] as $i => $od) {
             if ((int) $od['order']->get_id() === (int) $order_id) {
                 return floor($i / $per_page) + 1;
@@ -458,6 +508,14 @@ class CJS_Admin_Orders {
         return 1;
     }
     
+    private static function get_date_filters() {
+        $filters = [];
+        foreach (['manufacture_from', 'manufacture_to', 'finish_from', 'finish_to', 'deliver_from', 'deliver_to'] as $key) {
+            $filters[$key] = isset($_GET[$key]) ? sanitize_text_field($_GET[$key]) : '';
+        }
+        return $filters;
+    }
+
     /**
     * Generate sort key for delivery date sorting
     */
@@ -534,8 +592,14 @@ class CJS_Admin_Orders {
             </td>
             <td><?php echo esc_html($order->get_formatted_billing_full_name()); ?></td>
             <td>
-                <input type="date" class="cjs-inline-edit" 
-                       data-field="finish_by_date" 
+                <input type="date" class="cjs-inline-edit"
+                       data-field="manufacture_by_date"
+                       data-order-id="<?php echo esc_attr($order_id); ?>"
+                       value="<?php echo esc_attr($ext->manufacture_by_date); ?>" />
+            </td>
+            <td>
+                <input type="date" class="cjs-inline-edit"
+                       data-field="finish_by_date"
                        data-order-id="<?php echo esc_attr($order_id); ?>"
                        value="<?php echo esc_attr($ext->finish_by_date); ?>" />
             </td>

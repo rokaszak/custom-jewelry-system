@@ -352,6 +352,42 @@
     min-width: 150px;
 }
 
+.cjs-date-filter-group {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+}
+
+.cjs-date-filter-group label {
+    font-weight: 600;
+    white-space: nowrap;
+}
+
+.cjs-search-form .cjs-date-filter-group input[type="date"] {
+    min-width: 0;
+    width: 140px;
+}
+
+.cjs-orders-table th.cjs-col-order {
+    width: 55px;
+}
+
+.cjs-orders-table th.cjs-col-date {
+    width: 115px;
+}
+
+.cjs-orders-table th.cjs-col-days {
+    width: 75px;
+}
+
+.cjs-orders-table th.cjs-col-check {
+    width: 55px;
+}
+
+.cjs-orders-table th.cjs-col-actions {
+    width: 70px;
+}
+
 /* Stone order status dropdown (checkbox rows inside) */
 .cjs-stone-status-dropdown {
     position: relative;

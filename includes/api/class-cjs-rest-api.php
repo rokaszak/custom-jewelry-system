@@ -443,7 +443,7 @@ class CJS_REST_API {
         $field = sanitize_text_field($_POST['field']);
         $value = $_POST['value'];
         
-        $valid_fields = ['finish_by_date', 'deliver_by_date', 'order_model', 'order_production', 'casting_notes', 'order_printing', 'manufacturing_status', 'order_type'];
+        $valid_fields = ['manufacture_by_date', 'finish_by_date', 'deliver_by_date', 'order_model', 'order_production', 'casting_notes', 'order_printing', 'manufacturing_status', 'order_type'];
         if (!in_array($field, $valid_fields)) {
             wp_send_json_error(['message' => 'Invalid field']);
             return;

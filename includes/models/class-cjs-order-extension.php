@@ -101,6 +101,12 @@ class CJS_Order_Extension {
         ?>
         <div class="cjs-order-meta-box">
             <p>
+                <label for="cjs_manufacture_by_date"><?php _e('Pagaminti iki', 'custom-jewelry-system'); ?></label>
+                <input type="date" id="cjs_manufacture_by_date" name="cjs_manufacture_by_date"
+                       value="<?php echo esc_attr($data['manufacture_by_date'] ?? ''); ?>" />
+            </p>
+
+            <p>
                 <label for="cjs_finish_by_date"><?php _e('Užprabuoti iki', 'custom-jewelry-system'); ?></label>
                 <input type="date" id="cjs_finish_by_date" name="cjs_finish_by_date" 
                        value="<?php echo esc_attr($data['finish_by_date'] ?? ''); ?>" />
@@ -495,6 +501,7 @@ class CJS_Order_Extension {
      */
     private static function save_order_data($order_id) {
         $data = [
+            'manufacture_by_date' => sanitize_text_field($_POST['cjs_manufacture_by_date'] ?? ''),
             'finish_by_date' => sanitize_text_field($_POST['cjs_finish_by_date'] ?? ''),
             'deliver_by_date' => sanitize_text_field($_POST['cjs_deliver_by_date'] ?? ''),
             'order_model' => isset($_POST['cjs_order_model']) ? 1 : 0,
@@ -523,6 +530,7 @@ class CJS_Order_Extension {
         
         if (!$data) {
             return [
+                'manufacture_by_date' => '',
                 'finish_by_date' => '',
                 'deliver_by_date' => '',
                 'order_model' => 0,
@@ -560,13 +568,22 @@ class CJS_Order_Extension {
             $deliver_date = clone $order_date;
             $deliver_date->add(new DateInterval('P12W'));
             $deliver_by_date = $deliver_date->format('Y-m-d');
-            
+
             // Update the database with the default date
             self::update_order_extension($order_id, ['deliver_by_date' => $deliver_by_date]);
         }
-        
+
+        $manufacture_by_date = $data['manufacture_by_date'] ?? '';
+        if (empty($manufacture_by_date) || $manufacture_by_date === '0000-00-00' || $manufacture_by_date === 'null') {
+            $manufacture_date = new DateTime($finish_by_date);
+            $manufacture_date->sub(new DateInterval('P1W'));
+            $manufacture_by_date = $manufacture_date->format('Y-m-d');
+            self::update_order_extension($order_id, ['manufacture_by_date' => $manufacture_by_date]);
+        }
+
         // Ensure no NULL values
         return [
+            'manufacture_by_date' => $manufacture_by_date,
             'finish_by_date' => $finish_by_date,
             'deliver_by_date' => $deliver_by_date,
             'order_model' => $data['order_model'] ?? 0,
@@ -604,23 +621,27 @@ class CJS_Order_Extension {
             }
             
             // Calculate default dates: 10 weeks for finish, 12 weeks for deliver
+            $manufacture_date = clone $order_date;
+            $manufacture_date->add(new DateInterval('P9W'));
+
             $finish_date = clone $order_date;
             $finish_date->add(new DateInterval('P10W'));
-            
+
             $deliver_date = clone $order_date;
             $deliver_date->add(new DateInterval('P12W'));
-            
+
             $result = $wpdb->insert(
                 $wpdb->prefix . 'cjs_order_extensions',
                 [
                     'order_id' => $order_id,
+                    'manufacture_by_date' => $manufacture_date->format('Y-m-d'),
                     'finish_by_date' => $finish_date->format('Y-m-d'),
                     'deliver_by_date' => $deliver_date->format('Y-m-d'),
                     'order_type' => 'Įprastas',
                     'created_at' => current_time('mysql'),
                     'updated_at' => current_time('mysql')
                 ],
-                ['%d', '%s', '%s', '%s', '%s', '%s']
+                ['%d', '%s', '%s', '%s', '%s', '%s', '%s']
             );
             
             if ($result === false) {
@@ -722,6 +743,7 @@ class CJS_Order_Extension {
             $new_columns[$key] = $column;
             
             if ('order_status' === $key) {
+                $new_columns['cjs_manufacture_by'] = __('Pagaminti iki', 'custom-jewelry-system');
                 $new_columns['cjs_finish_by'] = __('Užprabuoti iki', 'custom-jewelry-system');
                 $new_columns['cjs_deliver_by'] = __('Pristatyti iki', 'custom-jewelry-system');
                 $new_columns['cjs_manufacturing_status'] = __('Gamybos statusas', 'custom-jewelry-system');
@@ -740,6 +762,12 @@ class CJS_Order_Extension {
         $data = self::get_order_extension($order_id);
         
         switch ($column) {
+            case 'cjs_manufacture_by':
+                if ($data['manufacture_by_date']) {
+                    echo esc_html(date_i18n('Y-m-d', strtotime($data['manufacture_by_date'])));
+                }
+                break;
+
             case 'cjs_finish_by':
                 if ($data['finish_by_date']) {
                     echo esc_html(date_i18n('Y-m-d', strtotime($data['finish_by_date'])));
