@@ -3,7 +3,7 @@
  * Plugin Name: Custom Jewelry System
  * Plugin URI: https://Proven.lt/
  * Description: Advanced order management and stone tracking system for jewelers
- * Version: 1.5.5
+ * Version: 1.6.7
  * Author: Rokas Zakarauskas
  * Text Domain: custom-jewelry-system
  * Domain Path: /languages
@@ -19,7 +19,7 @@ if (!defined('ABSPATH')) {
 }
 
 // Define plugin constants
-define('CJS_VERSION', '1.5.5');
+define('CJS_VERSION', '1.6.7');
 define('CJS_PLUGIN_DIR', plugin_dir_path(__FILE__));
 define('CJS_PLUGIN_URL', plugin_dir_url(__FILE__));
 define('CJS_PLUGIN_BASENAME', plugin_basename(__FILE__));
@@ -84,16 +84,22 @@ class CustomJewelrySystem {
         require_once CJS_PLUGIN_DIR . 'includes/models/class-cjs-stone-order.php';
         require_once CJS_PLUGIN_DIR . 'includes/models/class-cjs-order-extension.php';
         require_once CJS_PLUGIN_DIR . 'includes/models/class-cjs-inventory-item.php';
-        
+        require_once CJS_PLUGIN_DIR . 'includes/models/class-cjs-calendar-interval.php';
+
+        // Scheduler
+        require_once CJS_PLUGIN_DIR . 'includes/class-cjs-scheduler.php';
+
         // Admin includes
         require_once CJS_PLUGIN_DIR . 'includes/admin/class-cjs-admin-orders.php';
         require_once CJS_PLUGIN_DIR . 'includes/admin/class-cjs-admin-stones.php';
         require_once CJS_PLUGIN_DIR . 'includes/admin/class-cjs-admin-inventory.php';
         require_once CJS_PLUGIN_DIR . 'includes/admin/class-cjs-admin-stone-orders.php';
         require_once CJS_PLUGIN_DIR . 'includes/admin/class-cjs-admin-settings.php';
+        require_once CJS_PLUGIN_DIR . 'includes/admin/class-cjs-admin-calendar.php';
         require_once CJS_PLUGIN_DIR . 'includes/class-cjs-modals.php';
         // API includes
         require_once CJS_PLUGIN_DIR . 'includes/api/class-cjs-rest-api.php';
+        require_once CJS_PLUGIN_DIR . 'includes/api/class-cjs-calendar-api.php';
         
         // File handler
         require_once CJS_PLUGIN_DIR . 'includes/class-cjs-file-handler.php';
@@ -120,6 +126,7 @@ class CustomJewelrySystem {
         // Initialize components
         CJS_Order_Extension::init();
         CJS_REST_API::init();
+        CJS_Calendar_API::init();
         CJS_File_Handler::init();
         CJS_Frontend::init();
         CJS_Size_Kit::init();
@@ -283,6 +290,16 @@ class CustomJewelrySystem {
             [CJS_Admin_Inventory::class, 'render_page']
         );
         
+        // Submenu - Production Calendar
+        add_submenu_page(
+            'custom-jewelry-system',
+            __('Production Calendar', 'custom-jewelry-system'),
+            __('Gamybos kalendorius', 'custom-jewelry-system'),
+            'manage_options',
+            'cjs-calendar',
+            [CJS_Admin_Calendar::class, 'render_page']
+        );
+
         // Submenu - Settings & Log
         add_submenu_page(
             'custom-jewelry-system',
@@ -398,6 +415,11 @@ class CustomJewelrySystem {
         // Media uploader for file uploads
         if (in_array($hook, ['post.php', 'post-new.php', 'woocommerce_page_wc-orders'])) {
             wp_enqueue_media();
+        }
+
+        // Production calendar assets (only on the calendar page)
+        if (strpos($hook, 'cjs-calendar') !== false) {
+            CJS_Admin_Calendar::enqueue_assets();
         }
     }
     

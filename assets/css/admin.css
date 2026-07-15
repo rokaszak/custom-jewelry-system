@@ -381,6 +381,23 @@
     width: 75px;
 }
 
+.cjs-orders-table th.cjs-col-hours {
+    width: 110px;
+}
+
+.cjs-hours-cell {
+    white-space: nowrap;
+}
+
+.cjs-hours-cell .cjs-hours-input {
+    width: 48px;
+    padding: 2px 4px;
+}
+
+.cjs-hours-sep {
+    color: #6c757d;
+}
+
 .cjs-orders-table th.cjs-col-check {
     width: 55px;
 }

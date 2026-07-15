@@ -41,6 +41,53 @@ class CJS_Order_Extension {
         // Add meta box for stones in order items
         add_action('woocommerce_order_item_add_action_buttons', [__CLASS__, 'add_stone_button_to_items'], 10, 1);
         add_action('admin_footer', [__CLASS__, 'render_order_modals']);
+
+        add_action('woocommerce_product_options_general_product_data', [__CLASS__, 'render_product_hours_field']);
+        add_action('woocommerce_admin_process_product_object', [__CLASS__, 'save_product_hours_field']);
+    }
+
+    public static function render_product_hours_field() {
+        woocommerce_wp_text_input([
+            'id' => '_cjs_work_hours',
+            'label' => __('Gamybos valandos (h)', 'custom-jewelry-system'),
+            'type' => 'number',
+            'custom_attributes' => ['step' => '0.25', 'min' => '0'],
+            'desc_tip' => true,
+            'description' => __('Numatytos gamybos valandos vienam vienetui. Palikite tuščią, jei norite naudoti 10 val.', 'custom-jewelry-system')
+        ]);
+    }
+
+    public static function save_product_hours_field($product) {
+        $value = isset($_POST['_cjs_work_hours']) ? wc_clean(wp_unslash($_POST['_cjs_work_hours'])) : '';
+        if ($value === '' || (float) $value <= 0) {
+            $product->delete_meta_data('_cjs_work_hours');
+        } else {
+            $product->update_meta_data('_cjs_work_hours', (float) $value);
+        }
+    }
+
+    public static function calculate_default_hours($order) {
+        $total = 0;
+        foreach ($order->get_items() as $item) {
+            $quantity = max(1, (int) $item->get_quantity());
+            $hours = 0;
+            $product = $item->get_product();
+            if ($product) {
+                $meta = $product->get_meta('_cjs_work_hours');
+                if ($meta === '' && $product->get_parent_id()) {
+                    $parent = wc_get_product($product->get_parent_id());
+                    if ($parent) {
+                        $meta = $parent->get_meta('_cjs_work_hours');
+                    }
+                }
+                $hours = (float) $meta;
+            }
+            if ($hours <= 0) {
+                $hours = 10;
+            }
+            $total += $quantity * $hours;
+        }
+        return $total > 0 ? round($total, 2) : 10;
     }
     
     /**
@@ -538,7 +585,9 @@ class CJS_Order_Extension {
                 'casting_notes' => '',
                 'order_printing' => 0,
                 'manufacturing_status' => '',
-                'order_type' => 'Įprastas'
+                'order_type' => 'Įprastas',
+                'assigned_hours' => '',
+                'completed_hours' => 0
             ];
         }
         
@@ -581,6 +630,12 @@ class CJS_Order_Extension {
             self::update_order_extension($order_id, ['manufacture_by_date' => $manufacture_by_date]);
         }
 
+        $assigned_hours = $data['assigned_hours'] ?? null;
+        if (($assigned_hours === null || $assigned_hours === '') && $order) {
+            $assigned_hours = self::calculate_default_hours($order);
+            self::update_order_extension($order_id, ['assigned_hours' => $assigned_hours]);
+        }
+
         // Ensure no NULL values
         return [
             'manufacture_by_date' => $manufacture_by_date,
@@ -591,7 +646,9 @@ class CJS_Order_Extension {
             'casting_notes' => $data['casting_notes'] ?? '',
             'order_printing' => $data['order_printing'] ?? 0,
             'manufacturing_status' => $data['manufacturing_status'] ?? '',
-            'order_type' => $data['order_type'] ?? 'Įprastas'
+            'order_type' => $data['order_type'] ?? 'Įprastas',
+            'assigned_hours' => $assigned_hours !== null ? $assigned_hours : '',
+            'completed_hours' => $data['completed_hours'] ?? 0
         ];
     }
     
@@ -638,10 +695,12 @@ class CJS_Order_Extension {
                     'finish_by_date' => $finish_date->format('Y-m-d'),
                     'deliver_by_date' => $deliver_date->format('Y-m-d'),
                     'order_type' => 'Įprastas',
+                    'assigned_hours' => $order ? self::calculate_default_hours($order) : 10,
+                    'completed_hours' => 0,
                     'created_at' => current_time('mysql'),
                     'updated_at' => current_time('mysql')
                 ],
-                ['%d', '%s', '%s', '%s', '%s', '%s', '%s']
+                ['%d', '%s', '%s', '%s', '%s', '%f', '%f', '%s', '%s']
             );
             
             if ($result === false) {

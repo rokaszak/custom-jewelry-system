@@ -115,6 +115,8 @@ class CJS_Install {
             order_printing tinyint(1) DEFAULT 0,
             manufacturing_status varchar(100) DEFAULT NULL,
             order_type varchar(100) DEFAULT 'Įprastas',
+            assigned_hours decimal(6,2) DEFAULT NULL,
+            completed_hours decimal(6,2) NOT NULL DEFAULT 0,
             created_at datetime DEFAULT CURRENT_TIMESTAMP,
             updated_at datetime DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
             PRIMARY KEY (id),
@@ -175,6 +177,29 @@ class CJS_Install {
             KEY item_category (item_category)
         ) $charset_collate;";
         
+        $sql_calendar_intervals = "CREATE TABLE {$wpdb->prefix}cjs_calendar_intervals (
+            id bigint(20) unsigned NOT NULL AUTO_INCREMENT,
+            resource_id bigint(20) unsigned NOT NULL DEFAULT 1,
+            order_id bigint(20) unsigned DEFAULT NULL,
+            type varchar(50) NOT NULL DEFAULT 'work',
+            name varchar(255) NOT NULL DEFAULT '',
+            start_datetime datetime NOT NULL,
+            end_datetime datetime NOT NULL,
+            is_locked tinyint(1) NOT NULL DEFAULT 0,
+            is_done tinyint(1) NOT NULL DEFAULT 0,
+            color varchar(7) DEFAULT NULL,
+            deadline_date date DEFAULT NULL,
+            order_finish datetime DEFAULT NULL,
+            created_at datetime DEFAULT CURRENT_TIMESTAMP,
+            updated_at datetime DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+            PRIMARY KEY (id),
+            KEY resource_id (resource_id),
+            KEY order_id (order_id),
+            KEY type (type),
+            KEY start_datetime (start_datetime),
+            KEY end_datetime (end_datetime)
+        ) $charset_collate;";
+
         // Execute table creation with error checking
         $tables = [
             'cjs_stones' => $sql_stones,
@@ -183,7 +208,8 @@ class CJS_Install {
             'cjs_order_extensions' => $sql_order_extensions,
             'cjs_order_files' => $sql_order_files,
             'cjs_activity_log' => $sql_activity_log,
-            'cjs_inventory_items' => $sql_inventory_items
+            'cjs_inventory_items' => $sql_inventory_items,
+            'cjs_calendar_intervals' => $sql_calendar_intervals
         ];
         
         foreach ($tables as $table_name => $sql) {
@@ -223,6 +249,14 @@ class CJS_Install {
             if (!in_array('manufacture_by_date', $columns)) {
                 $wpdb->query("ALTER TABLE {$wpdb->prefix}cjs_order_extensions ADD COLUMN manufacture_by_date date DEFAULT NULL AFTER order_id");
                 error_log("CJS: Added manufacture_by_date column to existing table");
+            }
+            if (!in_array('assigned_hours', $columns)) {
+                $wpdb->query("ALTER TABLE {$wpdb->prefix}cjs_order_extensions ADD COLUMN assigned_hours decimal(6,2) DEFAULT NULL AFTER order_type");
+                error_log("CJS: Added assigned_hours column to existing table");
+            }
+            if (!in_array('completed_hours', $columns)) {
+                $wpdb->query("ALTER TABLE {$wpdb->prefix}cjs_order_extensions ADD COLUMN completed_hours decimal(6,2) NOT NULL DEFAULT 0 AFTER assigned_hours");
+                error_log("CJS: Added completed_hours column to existing table");
             }
         }
         
@@ -422,6 +456,31 @@ class CJS_Install {
             'stone_size_units' => [
                 'carats' => 'Carats (ct)',
                 'mm' => 'Millimeters (mm)'
+            ],
+            'interval_types' => [
+                'work' => ['label' => 'Darbas', 'color' => '#4285f4'],
+                'atostogos' => ['label' => 'Atostogos', 'color' => '#e67c73'],
+                'asmeninis' => ['label' => 'Asmeninis', 'color' => '#f6bf26'],
+                'kita' => ['label' => 'Kita', 'color' => '#616161']
+            ],
+            'calendar_settings' => [
+                '1' => [
+                    'week' => [
+                        'mon' => ['enabled' => 1, 'start' => '08:00', 'end' => '17:00', 'breaks' => [['from' => '12:00', 'to' => '13:00']]],
+                        'tue' => ['enabled' => 1, 'start' => '08:00', 'end' => '17:00', 'breaks' => [['from' => '12:00', 'to' => '13:00']]],
+                        'wed' => ['enabled' => 1, 'start' => '08:00', 'end' => '17:00', 'breaks' => [['from' => '12:00', 'to' => '13:00']]],
+                        'thu' => ['enabled' => 1, 'start' => '08:00', 'end' => '17:00', 'breaks' => [['from' => '12:00', 'to' => '13:00']]],
+                        'fri' => ['enabled' => 1, 'start' => '08:00', 'end' => '17:00', 'breaks' => [['from' => '12:00', 'to' => '13:00']]],
+                        'sat' => ['enabled' => 0, 'start' => '08:00', 'end' => '17:00', 'breaks' => []],
+                        'sun' => ['enabled' => 0, 'start' => '08:00', 'end' => '17:00', 'breaks' => []]
+                    ],
+                    'rest' => [['from' => '22:00', 'to' => '06:00']],
+                    'rest_hours' => 8,
+                    'algorithm' => 'fcfs',
+                    'overflow' => 'delay',
+                    'aggro' => 1,
+                    'auto_split' => 0
+                ]
             ]
         ];
         
@@ -499,7 +558,8 @@ class CJS_Install {
             'cjs_order_files',
             'cjs_activity_log',
             'cjs_options_sort_order',
-            'cjs_inventory_items'
+            'cjs_inventory_items',
+            'cjs_calendar_intervals'
         ];
         
         $missing_tables = [];

@@ -1,5 +1,5 @@
 /**
- * Size Kit checkout modal – clicking the checkbox opens the modal; user must choose Sutinku or Nesutinku.
+ * Size Kit checkout modal - clicking the checkbox opens the modal; user must choose Sutinku or Nesutinku.
  */
 (function($) {
     'use strict';

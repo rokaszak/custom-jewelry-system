@@ -139,19 +139,19 @@ class CJS_Admin_Orders {
                     <span class="cjs-date-filter-group">
                         <label><?php _e('Pagaminti iki', 'custom-jewelry-system'); ?></label>
                         <input type="date" name="manufacture_from" value="<?php echo esc_attr($date_filters['manufacture_from']); ?>" />
-                        <span>–</span>
+                        <span>-</span>
                         <input type="date" name="manufacture_to" value="<?php echo esc_attr($date_filters['manufacture_to']); ?>" />
                     </span>
                     <span class="cjs-date-filter-group">
                         <label><?php _e('Užprabuoti iki', 'custom-jewelry-system'); ?></label>
                         <input type="date" name="finish_from" value="<?php echo esc_attr($date_filters['finish_from']); ?>" />
-                        <span>–</span>
+                        <span>-</span>
                         <input type="date" name="finish_to" value="<?php echo esc_attr($date_filters['finish_to']); ?>" />
                     </span>
                     <span class="cjs-date-filter-group">
                         <label><?php _e('Pristatyti iki', 'custom-jewelry-system'); ?></label>
                         <input type="date" name="deliver_from" value="<?php echo esc_attr($date_filters['deliver_from']); ?>" />
-                        <span>–</span>
+                        <span>-</span>
                         <input type="date" name="deliver_to" value="<?php echo esc_attr($date_filters['deliver_to']); ?>" />
                     </span>
                     <button type="submit" class="button"><?php _e('Filter', 'custom-jewelry-system'); ?></button>
@@ -167,6 +167,7 @@ class CJS_Admin_Orders {
                         <th class="cjs-col-date"><?php _e('Užprabuoti iki', 'custom-jewelry-system'); ?></th>
                         <th class="cjs-col-date"><?php _e('Pristatyti iki', 'custom-jewelry-system'); ?></th>
                         <th class="cjs-col-days"><?php _e('Dienos liko', 'custom-jewelry-system'); ?></th>
+                        <th class="cjs-col-hours"><?php _e('Darbas (h)', 'custom-jewelry-system'); ?></th>
                         <th class="cjs-col-check"><?php _e('Užsakyti modelį', 'custom-jewelry-system'); ?></th>
                         <th class="cjs-col-check"><?php _e('Užsakyti gamybą', 'custom-jewelry-system'); ?></th>
                         <th><?php _e('Liejimas', 'custom-jewelry-system'); ?></th>
@@ -184,7 +185,7 @@ class CJS_Admin_Orders {
                     $orders = self::get_orders($page, $per_page, $search, $status_filter, $order_model_filter, $order_production_filter, $order_type_filter, $has_stones_filter, $stone_order_status_filter, $has_size_kit_filter, $date_filters);
                     
                     if (empty($orders['items'])) {
-                        echo '<tr><td colspan="16">' . __('No orders found', 'custom-jewelry-system') . '</td></tr>';
+                        echo '<tr><td colspan="17">' . __('No orders found', 'custom-jewelry-system') . '</td></tr>';
                     } else {
                         foreach ($orders['items'] as $order_data) {
                             self::render_order_row($order_data);
@@ -620,9 +621,20 @@ class CJS_Admin_Orders {
                 }
                 ?>
             </td>
+            <td class="cjs-hours-cell">
+                <input type="number" step="0.25" min="0" class="cjs-inline-edit cjs-hours-input"
+                       data-field="completed_hours"
+                       data-order-id="<?php echo esc_attr($order_id); ?>"
+                       value="<?php echo esc_attr((string) (float) ($ext->completed_hours ?? 0)); ?>" />
+                <span class="cjs-hours-sep">/</span>
+                <input type="number" step="0.25" min="0" class="cjs-inline-edit cjs-hours-input"
+                       data-field="assigned_hours"
+                       data-order-id="<?php echo esc_attr($order_id); ?>"
+                       value="<?php echo esc_attr((string) (float) ($ext->assigned_hours ?? 0)); ?>" />
+            </td>
             <td>
-                <input type="checkbox" class="cjs-inline-edit" 
-                       data-field="order_model" 
+                <input type="checkbox" class="cjs-inline-edit"
+                       data-field="order_model"
                        data-order-id="<?php echo esc_attr($order_id); ?>"
                        <?php checked($ext->order_model, 1); ?> />
             </td>

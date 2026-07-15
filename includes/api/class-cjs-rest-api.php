@@ -444,7 +444,7 @@ class CJS_REST_API {
         $field = sanitize_text_field($_POST['field']);
         $value = $_POST['value'];
         
-        $valid_fields = ['manufacture_by_date', 'finish_by_date', 'deliver_by_date', 'order_model', 'order_production', 'casting_notes', 'order_printing', 'manufacturing_status', 'order_type'];
+        $valid_fields = ['manufacture_by_date', 'finish_by_date', 'deliver_by_date', 'order_model', 'order_production', 'casting_notes', 'order_printing', 'manufacturing_status', 'order_type', 'assigned_hours', 'completed_hours'];
         if (!in_array($field, $valid_fields)) {
             wp_send_json_error(['message' => 'Invalid field']);
             return;
@@ -461,6 +461,10 @@ class CJS_REST_API {
                 break;
             case 'order_printing':
                 $value = $value ? 1 : 0;
+                break;
+            case 'assigned_hours':
+            case 'completed_hours':
+                $value = (string) max(0, (float) $value);
                 break;
             default:
                 $value = sanitize_text_field($value);
@@ -482,9 +486,22 @@ class CJS_REST_API {
             wp_send_json_error(['message' => 'Database error: ' . $wpdb->last_error]);
             return;
         }
-        
+
+        if ($field === 'completed_hours' || $field === 'assigned_hours') {
+            $hours_row = $wpdb->get_row($wpdb->prepare(
+                "SELECT assigned_hours, completed_hours, manufacturing_status FROM {$wpdb->prefix}cjs_order_extensions WHERE order_id = %d",
+                $order_id
+            ));
+            if ($hours_row && (float) $hours_row->assigned_hours > 0
+                && (float) $hours_row->completed_hours >= (float) $hours_row->assigned_hours
+                && $hours_row->manufacturing_status !== 'Pagaminta') {
+                CJS_Order_Extension::update_order_extension($order_id, ['manufacturing_status' => 'Pagaminta']);
+                CJS_Logger::log('Order auto-marked Pagaminta (visos valandos atliktos)', 'info', 'order', $order_id, ['completed_hours' => $hours_row->completed_hours, 'assigned_hours' => $hours_row->assigned_hours]);
+            }
+        }
+
         CJS_Logger::log("Order field '{$field}' updated via AJAX", 'info', 'order', $order_id, ['field' => $field, 'value' => $value]);
-        
+
         wp_send_json_success(['message' => 'Updated successfully']);
     }
     
