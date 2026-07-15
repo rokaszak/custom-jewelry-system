@@ -59,6 +59,151 @@
 
             $(document).on('submit', '#cjs-order-types-settings-form', this.saveOrderTypeSettings);
             $(document).on('change', '.cjs-order-type-categories input[type="checkbox"]', this.enforceUniqueOrderTypeCategory);
+
+            $(document).on('click', '.cjs-complete-order-accept', this.acceptCompleteOrder);
+            $(document).on('click', '.cjs-complete-order-deny', function() {
+                $('#cjs-complete-order-modal').hide();
+            });
+
+            $(document).on('click', '.cjs-date-recalc-cancel', function() {
+                $('#cjs-date-recalc-modal').hide();
+            });
+            $(document).on('click', '.cjs-date-recalc-save', this.saveDateRecalc);
+            $(document).on('blur', '.cjs-inline-edit[type="date"]', function() {
+                CJS.flushDateRecalcModal();
+            });
+        },
+
+        dateFieldOffsets: {
+            manufacture_by_date: { finish_by_date: 7, deliver_by_date: 21 },
+            finish_by_date: { manufacture_by_date: -7, deliver_by_date: 14 },
+            deliver_by_date: { manufacture_by_date: -21, finish_by_date: -14 }
+        },
+
+        dateRecalcPending: null,
+
+        flushDateRecalcModal: function() {
+            var pending = CJS.dateRecalcPending;
+            CJS.dateRecalcPending = null;
+            if (pending) {
+                CJS.openDateRecalcModal(pending.orderId, pending.field, pending.value);
+            }
+        },
+
+        addDaysToDate: function(dateStr, days) {
+            var parts = dateStr.split('-');
+            var date = new Date(parseInt(parts[0], 10), parseInt(parts[1], 10) - 1, parseInt(parts[2], 10) + days);
+            var month = String(date.getMonth() + 1);
+            var day = String(date.getDate());
+            if (month.length < 2) month = '0' + month;
+            if (day.length < 2) day = '0' + day;
+            return date.getFullYear() + '-' + month + '-' + day;
+        },
+
+        openDateRecalcModal: function(orderId, changedField, dateValue) {
+            var offsets = CJS.dateFieldOffsets[changedField];
+            if (!offsets || !dateValue) {
+                return;
+            }
+
+            var $modal = $('#cjs-date-recalc-modal');
+            if (!$modal.length) {
+                return;
+            }
+
+            $modal.data('order-id', orderId);
+
+            $modal.find('.cjs-date-recalc-row').each(function() {
+                var $row = $(this);
+                var field = $row.data('field');
+
+                if (field === changedField) {
+                    $row.hide();
+                    return;
+                }
+
+                $row.show();
+                $row.find('.cjs-date-recalc-check').prop('checked', true);
+                $row.find('.cjs-date-recalc-input').val(CJS.addDaysToDate(dateValue, offsets[field]));
+            });
+
+            $modal.show();
+        },
+
+        saveDateRecalc: function() {
+            var $modal = $('#cjs-date-recalc-modal');
+            var orderId = $modal.data('order-id');
+            var $btn = $(this);
+
+            if (!orderId) {
+                $modal.hide();
+                return;
+            }
+
+            var updates = [];
+            $modal.find('.cjs-date-recalc-row:visible').each(function() {
+                var $row = $(this);
+                var value = $row.find('.cjs-date-recalc-input').val();
+                if ($row.find('.cjs-date-recalc-check').is(':checked') && value) {
+                    updates.push({ field: $row.data('field'), value: value });
+                }
+            });
+
+            if (!updates.length) {
+                $modal.hide();
+                return;
+            }
+
+            $btn.prop('disabled', true);
+
+            var requests = updates.map(function(update) {
+                return CJS.updateOrderField(orderId, update.field, update.value).done(function(response) {
+                    if (response && response.success) {
+                        $('.cjs-inline-edit[data-field="' + update.field + '"][data-order-id="' + orderId + '"]').val(update.value);
+                    }
+                });
+            });
+
+            $.when.apply($, requests).always(function() {
+                $btn.prop('disabled', false);
+                $modal.hide();
+            });
+        },
+
+        acceptCompleteOrder: function() {
+            var $modal = $('#cjs-complete-order-modal');
+            var orderId = $modal.data('order-id');
+            var $btn = $(this);
+
+            if (!orderId) {
+                $modal.hide();
+                return;
+            }
+
+            $btn.prop('disabled', true);
+
+            $.post(cjs_ajax.ajax_url, {
+                action: 'cjs_complete_wc_order',
+                nonce: cjs_ajax.nonce,
+                order_id: orderId
+            })
+            .done(function(response) {
+                if (response.success) {
+                    $modal.hide();
+                    $('#order' + orderId).fadeOut(300, function() {
+                        $(this).remove();
+                    });
+                    CJS.showNotice(response.data && response.data.message ? response.data.message : cjs_ajax.strings.saved, 'success');
+                } else {
+                    CJS.showNotice(response.data && response.data.message ? response.data.message : 'Error', 'error');
+                }
+            })
+            .fail(function() {
+                CJS.showNotice(cjs_ajax.strings && cjs_ajax.strings.error ? cjs_ajax.strings.error : 'Error', 'error');
+            })
+            .always(function() {
+                $btn.prop('disabled', false);
+            });
         },
 
         initHighlightFromHash: function() {
@@ -447,7 +592,14 @@
                 $this.addClass('cjs-loading');
                 
                 if (orderId) {
-                    CJS.updateOrderField(orderId, field, value).always(function() {
+                    if (CJS.dateFieldOffsets[field]) {
+                        CJS.dateRecalcPending = value ? { orderId: orderId, field: field, value: value } : null;
+                    }
+                    CJS.updateOrderField(orderId, field, value).done(function(response) {
+                        if (response && response.success && field === 'manufacturing_status' && String(value).toLowerCase() === 'done') {
+                            $('#cjs-complete-order-modal').data('order-id', orderId).show();
+                        }
+                    }).always(function() {
                         $this.removeClass('cjs-loading');
                     });
                 } else if (stoneOrderId) {

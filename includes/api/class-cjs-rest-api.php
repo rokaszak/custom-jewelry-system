@@ -47,6 +47,7 @@ class CJS_REST_API {
         add_action('wp_ajax_cjs_update_options_order', [__CLASS__, 'ajax_update_options_order']);
         add_action('wp_ajax_cjs_save_size_kit_settings', [__CLASS__, 'ajax_save_size_kit_settings']);
         add_action('wp_ajax_cjs_save_order_type_settings', [__CLASS__, 'ajax_save_order_type_settings']);
+        add_action('wp_ajax_cjs_complete_wc_order', [__CLASS__, 'ajax_complete_wc_order']);
         // Inventory item handlers
         add_action('wp_ajax_cjs_create_inventory_item', [__CLASS__, 'ajax_create_inventory_item']);
         add_action('wp_ajax_cjs_update_inventory_item', [__CLASS__, 'ajax_update_inventory_item']);
@@ -1532,6 +1533,30 @@ class CJS_REST_API {
         update_option('cjs_order_type_category_map', $map);
 
         wp_send_json_success(['message' => __('Settings saved.', 'custom-jewelry-system')]);
+    }
+
+    public static function ajax_complete_wc_order() {
+        if (!isset($_POST['nonce']) || !wp_verify_nonce(sanitize_text_field(wp_unslash($_POST['nonce'])), 'wp_rest')) {
+            wp_send_json_error(['message' => 'Invalid nonce']);
+            return;
+        }
+
+        self::check_permission();
+
+        $order_id = absint($_POST['order_id'] ?? 0);
+        $order = wc_get_order($order_id);
+        if (!$order) {
+            wp_send_json_error(['message' => __('Order not found.', 'custom-jewelry-system')]);
+            return;
+        }
+
+        if (!$order->has_status('completed')) {
+            $order->update_status('completed');
+        }
+
+        CJS_Logger::log('Order marked as completed', 'success', 'order', $order_id);
+
+        wp_send_json_success(['message' => __('Užsakymas užbaigtas.', 'custom-jewelry-system')]);
     }
 
     public static function ajax_create_inventory_item() {

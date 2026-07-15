@@ -25,6 +25,55 @@ class CJS_Modals {
         self::render_stone_assignment_modal();
         self::render_stone_selection_modal();
         self::render_whatsapp_modal();
+        self::render_complete_order_modal();
+        self::render_date_recalc_modal();
+    }
+
+    public static function render_date_recalc_modal() {
+        ?>
+        <div id="cjs-date-recalc-modal" class="cjs-modal" style="display:none;">
+            <div class="cjs-modal-content" style="max-width: 450px;">
+                <span class="cjs-modal-close">&times;</span>
+                <h2><?php _e('Atnaujinti kitas datas?', 'custom-jewelry-system'); ?></h2>
+                <p><?php _e('Pakeitus datą, kitos dvi datos gali būti perskaičiuotos pagal standartinius tarpus. Pažymėtos datos bus išsaugotos.', 'custom-jewelry-system'); ?></p>
+                <div class="cjs-date-recalc-row" data-field="manufacture_by_date">
+                    <input type="checkbox" class="cjs-date-recalc-check" checked />
+                    <label><?php _e('Pagaminti iki', 'custom-jewelry-system'); ?></label>
+                    <input type="date" class="cjs-date-recalc-input" />
+                </div>
+                <div class="cjs-date-recalc-row" data-field="finish_by_date">
+                    <input type="checkbox" class="cjs-date-recalc-check" checked />
+                    <label><?php _e('Užprabuoti iki', 'custom-jewelry-system'); ?></label>
+                    <input type="date" class="cjs-date-recalc-input" />
+                </div>
+                <div class="cjs-date-recalc-row" data-field="deliver_by_date">
+                    <input type="checkbox" class="cjs-date-recalc-check" checked />
+                    <label><?php _e('Pristatyti iki', 'custom-jewelry-system'); ?></label>
+                    <input type="date" class="cjs-date-recalc-input" />
+                </div>
+                <div class="cjs-date-recalc-actions">
+                    <button type="button" class="button cjs-date-recalc-cancel"><?php _e('Atšaukti', 'custom-jewelry-system'); ?></button>
+                    <button type="button" class="button button-primary cjs-date-recalc-save"><?php _e('Išsaugoti', 'custom-jewelry-system'); ?></button>
+                </div>
+            </div>
+        </div>
+        <?php
+    }
+
+    public static function render_complete_order_modal() {
+        ?>
+        <div id="cjs-complete-order-modal" class="cjs-modal" style="display:none;">
+            <div class="cjs-modal-content" style="max-width: 450px;">
+                <span class="cjs-modal-close">&times;</span>
+                <h2><?php _e('Užbaigti užsakymą?', 'custom-jewelry-system'); ?></h2>
+                <p><?php _e('Gamybos statusas nustatytas kaip DONE. Ar nustatyti WooCommerce užsakymo statusą į „Completed“? Užsakymas dings iš šio sąrašo, o klientui bus išsiųstas įvykdyto užsakymo el. laiškas.', 'custom-jewelry-system'); ?></p>
+                <div class="cjs-complete-order-actions">
+                    <button type="button" class="button cjs-complete-order-deny"><?php _e('Ne', 'custom-jewelry-system'); ?></button>
+                    <button type="button" class="button button-primary cjs-complete-order-accept"><?php _e('Taip, užbaigti', 'custom-jewelry-system'); ?></button>
+                </div>
+            </div>
+        </div>
+        <?php
     }
     
     /**

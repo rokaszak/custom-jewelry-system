@@ -1137,6 +1137,32 @@
     cursor: pointer;
 }
 
+.cjs-complete-order-actions {
+    display: flex;
+    gap: 10px;
+    justify-content: flex-end;
+    margin-top: 15px;
+}
+
+.cjs-date-recalc-row {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin-bottom: 12px;
+}
+
+.cjs-date-recalc-row label {
+    flex: 1;
+    font-weight: 600;
+}
+
+.cjs-date-recalc-actions {
+    display: flex;
+    gap: 10px;
+    justify-content: flex-end;
+    margin-top: 15px;
+}
+
 /* Inventory column and pills (orders page) */
 .cjs-inventory-column {
     position: relative;
