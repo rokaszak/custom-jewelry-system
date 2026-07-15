@@ -11,6 +11,7 @@
         init: function() {
             console.log('CJS: Initializing...');
             this.bindEvents();
+            this.initDatepickers();
             this.initInlineEditing();
             this.initModals();
             this.initFileUpload();
@@ -69,7 +70,7 @@
                 $('#cjs-date-recalc-modal').hide();
             });
             $(document).on('click', '.cjs-date-recalc-save', this.saveDateRecalc);
-            $(document).on('blur', '.cjs-inline-edit[type="date"]', function() {
+            $(document).on('blur', '.cjs-inline-edit[type="date"], .cjs-inline-edit.cjs-datepicker', function() {
                 CJS.flushDateRecalcModal();
             });
         },
@@ -571,6 +572,29 @@
             });
         },
         
+        initDatepickers: function() {
+            if (!$.fn.datepicker) {
+                return;
+            }
+            $('input[type="date"]').each(function() {
+                this.type = 'text';
+                $(this)
+                    .addClass('cjs-datepicker')
+                    .attr('placeholder', 'YYYY-MM-DD')
+                    .attr('autocomplete', 'off')
+                    .datepicker({
+                        dateFormat: 'yy-mm-dd',
+                        firstDay: 1,
+                        changeMonth: true,
+                        changeYear: true,
+                        onSelect: function() {
+                            $(this).trigger('change');
+                            CJS.flushDateRecalcModal();
+                        }
+                    });
+            });
+        },
+
         initInlineEditing: function() {
             // Order field inline editing
             $(document).on('change', '.cjs-inline-edit', function() {
