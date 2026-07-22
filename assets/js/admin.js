@@ -76,9 +76,9 @@
         },
 
         dateFieldOffsets: {
-            manufacture_by_date: { finish_by_date: 7, deliver_by_date: 21 },
-            finish_by_date: { manufacture_by_date: -7, deliver_by_date: 14 },
-            deliver_by_date: { manufacture_by_date: -21, finish_by_date: -14 }
+            manufacture_by_date: { finish_by_date: 7, deliver_by_date: 14 },
+            finish_by_date: { manufacture_by_date: -7, deliver_by_date: 7 },
+            deliver_by_date: { manufacture_by_date: -14, finish_by_date: -7 }
         },
 
         dateRecalcPending: null,
@@ -555,9 +555,9 @@
                 e.stopPropagation();
             });
             // Update trigger count when checkboxes change
-            $(document).on('change', '.cjs-stone-status-dropdown-panel input[name="stone_order_status[]"]', function() {
+            $(document).on('change', '.cjs-stone-status-dropdown-panel input[type="checkbox"]', function() {
                 var $dropdown = $(this).closest('.cjs-stone-status-dropdown');
-                var count = $dropdown.find('input[name="stone_order_status[]"]:checked').length;
+                var count = $dropdown.find('.cjs-stone-status-dropdown-panel input[type="checkbox"]:checked').length;
                 var $trigger = $dropdown.find('.cjs-stone-status-dropdown-trigger');
                 var $countEl = $trigger.find('.cjs-stone-status-count');
                 if (count > 0) {

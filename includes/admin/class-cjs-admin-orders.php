@@ -19,7 +19,7 @@ class CJS_Admin_Orders {
         $highlight_order = isset($_GET['highlight_order']) ? absint($_GET['highlight_order']) : 0;
         if ($highlight_order) {
             $search = isset($_GET['s']) ? sanitize_text_field($_GET['s']) : '';
-            $status_filter = isset($_GET['status']) ? sanitize_text_field($_GET['status']) : '';
+            $status_filter = self::get_status_filter();
             $order_model_filter = isset($_GET['order_model']) ? sanitize_text_field($_GET['order_model']) : '';
             $order_production_filter = isset($_GET['order_production']) ? sanitize_text_field($_GET['order_production']) : '';
             $order_type_filter = isset($_GET['order_type']) ? sanitize_text_field($_GET['order_type']) : '';
@@ -40,7 +40,7 @@ class CJS_Admin_Orders {
 
         // Get filters
         $search = isset($_GET['s']) ? sanitize_text_field($_GET['s']) : '';
-        $status_filter = isset($_GET['status']) ? sanitize_text_field($_GET['status']) : '';
+        $status_filter = self::get_status_filter();
         $order_model_filter = isset($_GET['order_model']) ? sanitize_text_field($_GET['order_model']) : '';
         $order_production_filter = isset($_GET['order_production']) ? sanitize_text_field($_GET['order_production']) : '';
         $order_type_filter = isset($_GET['order_type']) ? sanitize_text_field($_GET['order_type']) : '';
@@ -54,107 +54,136 @@ class CJS_Admin_Orders {
         $date_filters = self::get_date_filters();
         $page = isset($_GET['paged']) ? max(1, intval($_GET['paged'])) : 1;
         $per_page = 20;
-        
+        $orders = self::get_orders($page, $per_page, $search, $status_filter, $order_model_filter, $order_production_filter, $order_type_filter, $has_stones_filter, $stone_order_status_filter, $has_size_kit_filter, $date_filters);
+        $stats = $orders['stats'];
+
         ?>
         <div class="wrap">
             <h1><?php _e('Užsakymų sąrašas', 'custom-jewelry-system'); ?></h1>
             
             <div class="cjs-filters">
-                <form method="get" class="cjs-search-form">
+                <form method="get" class="cjs-search-form cjs-filters-form">
                     <input type="hidden" name="page" value="cjs-orders-list" />
-                    <input type="text" name="s" value="<?php echo esc_attr($search); ?>" 
-                           placeholder="<?php esc_attr_e('Search orders...', 'custom-jewelry-system'); ?>" />
-                    <select name="status">
-                        <option value=""><?php _e('All Statuses', 'custom-jewelry-system'); ?></option>
+                    <div class="cjs-filter-row">
+                        <span class="cjs-filter-row-label"><?php _e('Užsakymų filtrai', 'custom-jewelry-system'); ?></span>
+                        <input type="text" name="s" value="<?php echo esc_attr($search); ?>"
+                               placeholder="<?php esc_attr_e('Search orders...', 'custom-jewelry-system'); ?>" />
                         <?php
                         $statuses = CJS_Order_Extension::get_ordered_options('manufacturing_statuses');
-                        foreach ($statuses as $status) {
-                            printf(
-                                '<option value="%s" %s>%s</option>',
-                                esc_attr($status),
-                                selected($status_filter, $status, false),
-                                esc_html($status)
-                            );
-                        }
+                        $status_selected_count = count($status_filter);
                         ?>
-                    </select>
-                    <select name="order_model">
-                        <option value=""><?php _e('Any model option', 'custom-jewelry-system'); ?></option>
-                        <option value="1" <?php selected($order_model_filter, '1'); ?>><?php _e('Model Ordered', 'custom-jewelry-system'); ?></option>
-                        <option value="0" <?php selected($order_model_filter, '0'); ?>><?php _e('Model Not Ordered', 'custom-jewelry-system'); ?></option>
-                    </select>
-                    <select name="order_production">
-                        <option value=""><?php _e('Any production option', 'custom-jewelry-system'); ?></option>
-                        <option value="1" <?php selected($order_production_filter, '1'); ?>><?php _e('Production Ordered', 'custom-jewelry-system'); ?></option>
-                        <option value="0" <?php selected($order_production_filter, '0'); ?>><?php _e('Production Not Ordered', 'custom-jewelry-system'); ?></option>
-                    </select>
-                    <select name="order_type">
-                        <option value=""><?php _e('All order types', 'custom-jewelry-system'); ?></option>
-                        <?php
-                        $order_types = CJS_Order_Extension::get_ordered_options('order_types');
-                        foreach ($order_types as $type) {
-                            printf(
-                                '<option value="%s" %s>%s</option>',
-                                esc_attr($type),
-                                selected($order_type_filter, $type, false),
-                                esc_html($type)
-                            );
-                        }
-                        ?>
-                    </select>
-                    <select name="has_stones">
-                        <option value=""><?php _e('No stone filtering', 'custom-jewelry-system'); ?></option>
-                        <option value="1" <?php selected($has_stones_filter, '1'); ?>><?php _e('Has required stones', 'custom-jewelry-system'); ?></option>
-                        <option value="0" <?php selected($has_stones_filter, '0'); ?>><?php _e('No required stones', 'custom-jewelry-system'); ?></option>
-                    </select>
-                    <select name="has_size_kit">
-                        <option value=""><?php _e('No size kit filtering', 'custom-jewelry-system'); ?></option>
-                        <option value="missing" <?php selected($has_size_kit_filter, 'missing'); ?>><?php _e('Missing size kit', 'custom-jewelry-system'); ?></option>
-                        <option value="has" <?php selected($has_size_kit_filter, 'has'); ?>><?php _e('Has size kit', 'custom-jewelry-system'); ?></option>
-                    </select>
-                    <?php
-                    $stone_order_statuses = get_option('cjs_stone_order_statuses', []);
-                    if (!empty($stone_order_statuses)) :
-                        $selected_count = count($stone_order_status_filter);
-                    ?>
-                    <div class="cjs-stone-status-dropdown">
-                        <button type="button" class="button cjs-stone-status-dropdown-trigger" aria-expanded="false" aria-haspopup="true">
-                            <?php _e('Stone order status', 'custom-jewelry-system'); ?>
-                            <?php if ($selected_count > 0) : ?>
-                                <span class="cjs-stone-status-count">(<?php echo (int) $selected_count; ?>)</span>
-                            <?php endif; ?>
-                        </button>
-                        <div class="cjs-stone-status-dropdown-panel" role="menu" hidden>
-                            <?php foreach ($stone_order_statuses as $status_key => $status_data) : ?>
-                            <label class="cjs-stone-status-checkbox-row" role="menuitem">
-                                <input type="checkbox" name="stone_order_status[]" value="<?php echo esc_attr($status_key); ?>"
-                                    <?php checked(in_array($status_key, $stone_order_status_filter)); ?> />
-                                <span class="cjs-stone-status-dot" style="background-color: <?php echo esc_attr($status_data['color'] ?? '#6c757d'); ?>;"></span>
-                                <span class="cjs-stone-status-label"><?php echo esc_html($status_data['label'] ?? $status_key); ?></span>
-                            </label>
-                            <?php endforeach; ?>
+                        <div class="cjs-stone-status-dropdown">
+                            <button type="button" class="button cjs-stone-status-dropdown-trigger" aria-expanded="false" aria-haspopup="true">
+                                <?php _e('Statusas', 'custom-jewelry-system'); ?>
+                                <?php if ($status_selected_count > 0) : ?>
+                                    <span class="cjs-stone-status-count">(<?php echo (int) $status_selected_count; ?>)</span>
+                                <?php endif; ?>
+                            </button>
+                            <div class="cjs-stone-status-dropdown-panel" role="menu" hidden>
+                                <?php foreach ($statuses as $status) : ?>
+                                <label class="cjs-stone-status-checkbox-row" role="menuitem">
+                                    <input type="checkbox" name="status[]" value="<?php echo esc_attr($status); ?>"
+                                        <?php checked(in_array($status, $status_filter, true)); ?> />
+                                    <span class="cjs-stone-status-label"><?php echo esc_html($status); ?></span>
+                                </label>
+                                <?php endforeach; ?>
+                            </div>
                         </div>
+                        <select name="order_model">
+                            <option value=""><?php _e('Any model option', 'custom-jewelry-system'); ?></option>
+                            <option value="1" <?php selected($order_model_filter, '1'); ?>><?php _e('Model Ordered', 'custom-jewelry-system'); ?></option>
+                            <option value="0" <?php selected($order_model_filter, '0'); ?>><?php _e('Model Not Ordered', 'custom-jewelry-system'); ?></option>
+                        </select>
+                        <select name="order_production">
+                            <option value=""><?php _e('Any production option', 'custom-jewelry-system'); ?></option>
+                            <option value="1" <?php selected($order_production_filter, '1'); ?>><?php _e('Production Ordered', 'custom-jewelry-system'); ?></option>
+                            <option value="0" <?php selected($order_production_filter, '0'); ?>><?php _e('Production Not Ordered', 'custom-jewelry-system'); ?></option>
+                        </select>
+                        <select name="has_size_kit">
+                            <option value=""><?php _e('No size kit filtering', 'custom-jewelry-system'); ?></option>
+                            <option value="missing" <?php selected($has_size_kit_filter, 'missing'); ?>><?php _e('Missing size kit', 'custom-jewelry-system'); ?></option>
+                            <option value="has" <?php selected($has_size_kit_filter, 'has'); ?>><?php _e('Has size kit', 'custom-jewelry-system'); ?></option>
+                        </select>
+                        <select name="order_type">
+                            <option value=""><?php _e('All order types', 'custom-jewelry-system'); ?></option>
+                            <?php
+                            $order_types = CJS_Order_Extension::get_ordered_options('order_types');
+                            foreach ($order_types as $type) {
+                                printf(
+                                    '<option value="%s" %s>%s</option>',
+                                    esc_attr($type),
+                                    selected($order_type_filter, $type, false),
+                                    esc_html($type)
+                                );
+                            }
+                            ?>
+                        </select>
                     </div>
-                    <?php endif; ?>
-                    <span class="cjs-date-filter-group">
-                        <label><?php _e('Pagaminti iki', 'custom-jewelry-system'); ?></label>
-                        <input type="date" name="manufacture_from" value="<?php echo esc_attr($date_filters['manufacture_from']); ?>" />
-                        <span>-</span>
-                        <input type="date" name="manufacture_to" value="<?php echo esc_attr($date_filters['manufacture_to']); ?>" />
-                    </span>
-                    <span class="cjs-date-filter-group">
-                        <label><?php _e('Užprabuoti iki', 'custom-jewelry-system'); ?></label>
-                        <input type="date" name="finish_from" value="<?php echo esc_attr($date_filters['finish_from']); ?>" />
-                        <span>-</span>
-                        <input type="date" name="finish_to" value="<?php echo esc_attr($date_filters['finish_to']); ?>" />
-                    </span>
-                    <span class="cjs-date-filter-group">
-                        <label><?php _e('Pristatyti iki', 'custom-jewelry-system'); ?></label>
-                        <input type="date" name="deliver_from" value="<?php echo esc_attr($date_filters['deliver_from']); ?>" />
-                        <span>-</span>
-                        <input type="date" name="deliver_to" value="<?php echo esc_attr($date_filters['deliver_to']); ?>" />
-                    </span>
-                    <button type="submit" class="button"><?php _e('Filter', 'custom-jewelry-system'); ?></button>
+                    <div class="cjs-filter-row">
+                        <span class="cjs-filter-row-label"><?php _e('Akmenų filtrai', 'custom-jewelry-system'); ?></span>
+                        <select name="has_stones">
+                            <option value=""><?php _e('No stone filtering', 'custom-jewelry-system'); ?></option>
+                            <option value="1" <?php selected($has_stones_filter, '1'); ?>><?php _e('Has required stones', 'custom-jewelry-system'); ?></option>
+                            <option value="0" <?php selected($has_stones_filter, '0'); ?>><?php _e('No required stones', 'custom-jewelry-system'); ?></option>
+                        </select>
+                        <?php
+                        $stone_order_statuses = get_option('cjs_stone_order_statuses', []);
+                        if (!empty($stone_order_statuses)) :
+                            $selected_count = count($stone_order_status_filter);
+                        ?>
+                        <div class="cjs-stone-status-dropdown">
+                            <button type="button" class="button cjs-stone-status-dropdown-trigger" aria-expanded="false" aria-haspopup="true">
+                                <?php _e('Stone order status', 'custom-jewelry-system'); ?>
+                                <?php if ($selected_count > 0) : ?>
+                                    <span class="cjs-stone-status-count">(<?php echo (int) $selected_count; ?>)</span>
+                                <?php endif; ?>
+                            </button>
+                            <div class="cjs-stone-status-dropdown-panel" role="menu" hidden>
+                                <?php foreach ($stone_order_statuses as $status_key => $status_data) : ?>
+                                <label class="cjs-stone-status-checkbox-row" role="menuitem">
+                                    <input type="checkbox" name="stone_order_status[]" value="<?php echo esc_attr($status_key); ?>"
+                                        <?php checked(in_array($status_key, $stone_order_status_filter)); ?> />
+                                    <span class="cjs-stone-status-dot" style="background-color: <?php echo esc_attr($status_data['color'] ?? '#6c757d'); ?>;"></span>
+                                    <span class="cjs-stone-status-label"><?php echo esc_html($status_data['label'] ?? $status_key); ?></span>
+                                </label>
+                                <?php endforeach; ?>
+                            </div>
+                        </div>
+                        <?php endif; ?>
+                    </div>
+                    <div class="cjs-filter-row">
+                        <span class="cjs-filter-row-label"><?php _e('Datų filtrai', 'custom-jewelry-system'); ?></span>
+                        <span class="cjs-date-filter-group">
+                            <label><?php _e('Pagaminti iki', 'custom-jewelry-system'); ?></label>
+                            <input type="date" name="manufacture_from" value="<?php echo esc_attr($date_filters['manufacture_from']); ?>" />
+                            <span>-</span>
+                            <input type="date" name="manufacture_to" value="<?php echo esc_attr($date_filters['manufacture_to']); ?>" />
+                        </span>
+                        <span class="cjs-date-filter-group">
+                            <label><?php _e('Užprabuoti iki', 'custom-jewelry-system'); ?></label>
+                            <input type="date" name="finish_from" value="<?php echo esc_attr($date_filters['finish_from']); ?>" />
+                            <span>-</span>
+                            <input type="date" name="finish_to" value="<?php echo esc_attr($date_filters['finish_to']); ?>" />
+                        </span>
+                        <span class="cjs-date-filter-group">
+                            <label><?php _e('Pristatyti iki', 'custom-jewelry-system'); ?></label>
+                            <input type="date" name="deliver_from" value="<?php echo esc_attr($date_filters['deliver_from']); ?>" />
+                            <span>-</span>
+                            <input type="date" name="deliver_to" value="<?php echo esc_attr($date_filters['deliver_to']); ?>" />
+                        </span>
+                    </div>
+                    <div class="cjs-filter-row cjs-filter-actions">
+                        <span class="cjs-filter-row-label"><?php _e('Veiksmai', 'custom-jewelry-system'); ?></span>
+                        <button type="submit" class="button button-primary"><?php _e('Filtruoti', 'custom-jewelry-system'); ?></button>
+                        <a href="<?php echo esc_url(admin_url('admin.php?page=cjs-orders-list')); ?>" class="button"><?php _e('Išvalyti filtrus', 'custom-jewelry-system'); ?></a>
+                    </div>
+                    <div class="cjs-filter-row cjs-filter-stats">
+                        <span class="cjs-filter-row-label"><?php _e('Skaičiai', 'custom-jewelry-system'); ?></span>
+                        <span class="cjs-filter-stat"><strong><?php echo (int) $stats['count']; ?></strong> <?php echo esc_html(self::orders_word($stats['count'])); ?></span>
+                        <span class="cjs-filter-stat"><strong><?php echo esc_html(self::format_hours($stats['assigned'])); ?>h</strong> <?php _e('paskirta', 'custom-jewelry-system'); ?></span>
+                        <span class="cjs-filter-stat"><strong><?php echo esc_html(self::format_hours($stats['done'])); ?>h</strong> <?php _e('pabaigta', 'custom-jewelry-system'); ?></span>
+                        <span class="cjs-filter-stat"><strong><?php echo esc_html(self::format_hours($stats['left'])); ?>h</strong> <?php _e('likę', 'custom-jewelry-system'); ?></span>
+                    </div>
                 </form>
             </div>
             
@@ -182,8 +211,6 @@ class CJS_Admin_Orders {
                 </thead>
                 <tbody>
                     <?php
-                    $orders = self::get_orders($page, $per_page, $search, $status_filter, $order_model_filter, $order_production_filter, $order_type_filter, $has_stones_filter, $stone_order_status_filter, $has_size_kit_filter, $date_filters);
-                    
                     if (empty($orders['items'])) {
                         echo '<tr><td colspan="17">' . __('No orders found', 'custom-jewelry-system') . '</td></tr>';
                     } else {
@@ -223,7 +250,7 @@ class CJS_Admin_Orders {
     /**
      * Get orders with extended data (HPOS Compatible) - FIXED to exclude completed orders
      */
-    private static function get_orders($page, $per_page, $search = '', $status_filter = '', $order_model_filter = '', $order_production_filter = '', $order_type_filter = '', $has_stones_filter = '', $stone_order_status_filter = [], $has_size_kit_filter = '', $date_filters = [], $get_all = false) {
+    private static function get_orders($page, $per_page, $search = '', $status_filter = [], $order_model_filter = '', $order_production_filter = '', $order_type_filter = '', $has_stones_filter = '', $stone_order_status_filter = [], $has_size_kit_filter = '', $date_filters = [], $get_all = false) {
         global $wpdb;
         
         $offset = ($page - 1) * $per_page;
@@ -300,11 +327,11 @@ class CJS_Admin_Orders {
         $all_order_ids = $order_query->get_orders();
         
         // Filter by manufacturing status if provided
-        if ($status_filter) {
+        if (is_array($status_filter) && !empty($status_filter)) {
             $filtered_ids = [];
             foreach ($all_order_ids as $order_id) {
                 $ext_data = CJS_Order_Extension::get_order_extension($order_id);
-                if ($ext_data['manufacturing_status'] === $status_filter) {
+                if (in_array($ext_data['manufacturing_status'], $status_filter, true)) {
                     $filtered_ids[] = $order_id;
                 }
             }
@@ -451,6 +478,7 @@ class CJS_Admin_Orders {
 
         // Total count
         $total_orders = count($all_order_ids);
+        $hours_stats = self::compute_hours_stats($all_order_ids);
         
         // Get order extensions and sort by delivery date (use cached stones and inventory when available)
         $order_data = [];
@@ -492,14 +520,78 @@ class CJS_Admin_Orders {
         return [
             'items' => $order_data,
             'total' => $total_orders,
-            'total_pages' => ceil($total_orders / $per_page)
+            'total_pages' => ceil($total_orders / $per_page),
+            'stats' => $hours_stats
         ];
+    }
+
+    private static function compute_hours_stats($order_ids) {
+        $statuses = CJS_Order_Extension::get_ordered_options('manufacturing_statuses');
+        $status_index = [];
+        $atlikta_idx = -1;
+        foreach (array_values($statuses) as $i => $status) {
+            $key = strtolower($status);
+            $status_index[$key] = $i;
+            if ($key === 'atlieta') {
+                $atlikta_idx = $i;
+            }
+        }
+
+        $assigned_total = 0.0;
+        $done_total = 0.0;
+        foreach ($order_ids as $order_id) {
+            $ext = CJS_Order_Extension::get_order_extension($order_id);
+            $assigned_raw = $ext['assigned_hours'] ?? null;
+            $assigned = ($assigned_raw === null || $assigned_raw === '') ? 0.0 : (float) $assigned_raw;
+            $completed = (float) ($ext['completed_hours'] ?? 0);
+            $status_key = strtolower((string) ($ext['manufacturing_status'] ?? ''));
+
+            $hours_pct = $assigned > 0 ? min(1.0, max(0.0, $completed / $assigned)) : 0.0;
+            if ($atlikta_idx === -1) {
+                $pct = $status_key === 'done' ? 1.0 : $hours_pct;
+            } else {
+                $idx = isset($status_index[$status_key]) ? $status_index[$status_key] : null;
+                if ($idx === null || $idx < $atlikta_idx) {
+                    $pct = 0.0;
+                } elseif ($idx === $atlikta_idx) {
+                    $pct = $hours_pct;
+                } else {
+                    $pct = 1.0;
+                }
+            }
+
+            $assigned_total += $assigned;
+            $done_total += $assigned * $pct;
+        }
+
+        return [
+            'count' => count($order_ids),
+            'assigned' => $assigned_total,
+            'done' => $done_total,
+            'left' => $assigned_total - $done_total
+        ];
+    }
+
+    private static function format_hours($hours) {
+        return str_replace('.', ',', (string) round($hours, 1));
+    }
+
+    private static function orders_word($n) {
+        $m10 = $n % 10;
+        $m100 = $n % 100;
+        if ($m10 === 1 && $m100 !== 11) {
+            return __('užsakymas', 'custom-jewelry-system');
+        }
+        if ($m10 >= 2 && $m10 <= 9 && ($m100 < 11 || $m100 > 19)) {
+            return __('užsakymai', 'custom-jewelry-system');
+        }
+        return __('užsakymų', 'custom-jewelry-system');
     }
 
     /**
      * Get the page number that contains the given order (for deep-linking).
      */
-    public static function get_page_for_order($order_id, $per_page = 20, $search = '', $status_filter = '', $order_model_filter = '', $order_production_filter = '', $order_type_filter = '', $has_stones_filter = '', $stone_order_status_filter = [], $has_size_kit_filter = '', $date_filters = []) {
+    public static function get_page_for_order($order_id, $per_page = 20, $search = '', $status_filter = [], $order_model_filter = '', $order_production_filter = '', $order_type_filter = '', $has_stones_filter = '', $stone_order_status_filter = [], $has_size_kit_filter = '', $date_filters = []) {
         $result = self::get_orders(1, $per_page, $search, $status_filter, $order_model_filter, $order_production_filter, $order_type_filter, $has_stones_filter, $stone_order_status_filter, $has_size_kit_filter, $date_filters, true);
         foreach ($result['items'] as $i => $od) {
             if ((int) $od['order']->get_id() === (int) $order_id) {
@@ -515,6 +607,14 @@ class CJS_Admin_Orders {
             $filters[$key] = isset($_GET[$key]) ? sanitize_text_field($_GET[$key]) : '';
         }
         return $filters;
+    }
+
+    private static function get_status_filter() {
+        if (empty($_GET['status'])) {
+            return [];
+        }
+        $raw = is_array($_GET['status']) ? $_GET['status'] : [$_GET['status']];
+        return array_values(array_filter(array_map('sanitize_text_field', $raw)));
     }
 
     /**
@@ -807,11 +907,12 @@ class CJS_Admin_Orders {
                     <?php checked($ext->order_printing, 1); ?> />
             </td>
             <td>
+                <div class="cjs-order-actions">
                 <a href="<?php echo esc_url($edit_url); ?>" class="button button-small">
                     <?php _e('View', 'custom-jewelry-system'); ?>
                 </a>
-                <a href="#" 
-                    class="cjs-autofill-liejimas" 
+                <a href="#"
+                    class="cjs-autofill-liejimas"
                     data-order-id="<?php echo esc_attr($order->get_id()); ?>" 
                     title="Auto-fill Liejimas from product options">
                         
@@ -828,6 +929,7 @@ class CJS_Admin_Orders {
                             <path fill="url(#bluePinkGradient)" d="M14.217 19.707l-1.112 2.547c-.427.979-1.782.979-2.21 0l-1.112-2.547c-.99-2.267-2.771-4.071-4.993-5.057L1.73 13.292c-.973-.432-.973-1.848 0-2.28l2.965-1.316C6.974 8.684 8.787 6.813 9.76 4.47l1.126-2.714c.418-1.007 1.81-1.007 2.228 0L14.24 4.47c.973 2.344 2.786 4.215 5.065 5.226l2.965 1.316c.973.432.973 1.848 0 2.28l-3.061 1.359C16.988 15.637 15.206 17.441 14.217 19.707zM24.481 27.796l-.339.777c-.248.569-1.036.569-1.284 0l-.339-.777c-.604-1.385-1.693-2.488-3.051-3.092l-1.044-.464c-.565-.251-.565-1.072 0-1.323l.986-.438c1.393-.619 2.501-1.763 3.095-3.195l.348-.84c.243-.585 1.052-.585 1.294 0l.348.84c.594 1.432 1.702 2.576 3.095 3.195l.986.438c.565-.251.565 1.072 0 1.323l-1.044.464C26.174 25.308 25.085 26.411 24.481 27.796z"/>
                         </svg>
                 </a>
+                </div>
             </td>
         </tr>
         <?php

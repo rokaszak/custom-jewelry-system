@@ -3,7 +3,7 @@
  * Plugin Name: Custom Jewelry System
  * Plugin URI: https://Proven.lt/
  * Description: Advanced order management and stone tracking system for jewelers
- * Version: 1.6.7
+ * Version: 1.7.0
  * Author: Rokas Zakarauskas
  * Text Domain: custom-jewelry-system
  * Domain Path: /languages
@@ -19,7 +19,7 @@ if (!defined('ABSPATH')) {
 }
 
 // Define plugin constants
-define('CJS_VERSION', '1.6.7');
+define('CJS_VERSION', '1.7.0');
 define('CJS_PLUGIN_DIR', plugin_dir_path(__FILE__));
 define('CJS_PLUGIN_URL', plugin_dir_url(__FILE__));
 define('CJS_PLUGIN_BASENAME', plugin_basename(__FILE__));
@@ -96,6 +96,7 @@ class CustomJewelrySystem {
         require_once CJS_PLUGIN_DIR . 'includes/admin/class-cjs-admin-stone-orders.php';
         require_once CJS_PLUGIN_DIR . 'includes/admin/class-cjs-admin-settings.php';
         require_once CJS_PLUGIN_DIR . 'includes/admin/class-cjs-admin-calendar.php';
+        require_once CJS_PLUGIN_DIR . 'includes/admin/class-cjs-admin-orders-calendar.php';
         require_once CJS_PLUGIN_DIR . 'includes/class-cjs-modals.php';
         // API includes
         require_once CJS_PLUGIN_DIR . 'includes/api/class-cjs-rest-api.php';
@@ -300,6 +301,15 @@ class CustomJewelrySystem {
             [CJS_Admin_Calendar::class, 'render_page']
         );
 
+        add_submenu_page(
+            'custom-jewelry-system',
+            __('Orders Calendar', 'custom-jewelry-system'),
+            __('Užsakymų kalendorius', 'custom-jewelry-system'),
+            'manage_options',
+            'cjs-orders-calendar',
+            [CJS_Admin_Orders_Calendar::class, 'render_page']
+        );
+
         // Submenu - Settings & Log
         add_submenu_page(
             'custom-jewelry-system',
@@ -420,6 +430,10 @@ class CustomJewelrySystem {
         // Production calendar assets (only on the calendar page)
         if (strpos($hook, 'cjs-calendar') !== false) {
             CJS_Admin_Calendar::enqueue_assets();
+        }
+
+        if (strpos($hook, 'cjs-orders-calendar') !== false) {
+            CJS_Admin_Orders_Calendar::enqueue_assets();
         }
     }
     

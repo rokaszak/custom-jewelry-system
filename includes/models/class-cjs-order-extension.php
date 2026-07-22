@@ -606,7 +606,7 @@ class CJS_Order_Extension {
         // If dates are empty, null, or invalid (0000-00-00), set defaults
         if (empty($finish_by_date) || $finish_by_date === '0000-00-00' || $finish_by_date === 'null') {
             $finish_date = clone $order_date;
-            $finish_date->add(new DateInterval('P10W'));
+            $finish_date->add(new DateInterval('P11W'));
             $finish_by_date = $finish_date->format('Y-m-d');
             
             // Update the database with the default date
@@ -677,12 +677,12 @@ class CJS_Order_Extension {
                 $order_date = new DateTime();
             }
             
-            // Calculate default dates: 10 weeks for finish, 12 weeks for deliver
+            // Calculate default dates: 11 weeks for finish, 12 weeks for deliver
             $manufacture_date = clone $order_date;
-            $manufacture_date->add(new DateInterval('P9W'));
+            $manufacture_date->add(new DateInterval('P10W'));
 
             $finish_date = clone $order_date;
-            $finish_date->add(new DateInterval('P10W'));
+            $finish_date->add(new DateInterval('P11W'));
 
             $deliver_date = clone $order_date;
             $deliver_date->add(new DateInterval('P12W'));
