@@ -19,6 +19,7 @@
             this.initStoneStatusDropdown();
             this.initInventory();
             this.initHighlightFromHash();
+            this.initOrderRowLabels();
             this.StoneManager.init();
             this.StoneOrderManager.init();
             console.log('CJS: Initialization complete');
@@ -224,6 +225,23 @@
                     $row.removeClass('cjs-row-highlight');
                 }, 3000);
             }
+        },
+
+        initOrderRowLabels: function() {
+            $('.cjs-orders-table').each(function() {
+                var $table = $(this);
+                var labels = $table.find('thead th').map(function() {
+                    return $.trim($(this).text());
+                }).get();
+                if (!labels.length) return;
+                $table.find('tbody tr').each(function() {
+                    var $cells = $(this).children('td').not('.cjs-row-break');
+                    if ($cells.length !== labels.length) return;
+                    $cells.each(function(i) {
+                        $(this).attr('data-label', labels[i]);
+                    });
+                });
+            });
         },
 
         initInventory: function() {

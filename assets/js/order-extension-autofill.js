@@ -37,6 +37,17 @@
             $(document).on('focus', '.cjs-small-textarea', (e) => {
                 this.autoResize($(e.target));
             });
+
+            // Recompute heights when layout width changes (responsive wrap/unwrap)
+            let resizeTimer;
+            $(window).on('resize', () => {
+                clearTimeout(resizeTimer);
+                resizeTimer = setTimeout(() => {
+                    $('.cjs-small-textarea').each((index, textarea) => {
+                        this.autoResize($(textarea));
+                    });
+                }, 150);
+            });
         },
 
         /**

@@ -494,7 +494,7 @@ class CJS_REST_API {
             ));
             if ($hours_row && (float) $hours_row->assigned_hours > 0
                 && (float) $hours_row->completed_hours >= (float) $hours_row->assigned_hours
-                && $hours_row->manufacturing_status !== 'Pagaminta') {
+                && CJS_Order_Extension::can_auto_advance_status($hours_row->manufacturing_status, 'Pagaminta')) {
                 CJS_Order_Extension::update_order_extension($order_id, ['manufacturing_status' => 'Pagaminta']);
                 CJS_Logger::log('Order auto-marked Pagaminta (visos valandos atliktos)', 'info', 'order', $order_id, ['completed_hours' => $hours_row->completed_hours, 'assigned_hours' => $hours_row->assigned_hours]);
             }

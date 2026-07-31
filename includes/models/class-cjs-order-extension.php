@@ -885,6 +885,39 @@ class CJS_Order_Extension {
     public static function get_ordered_manufacturing_statuses() {
         return self::get_ordered_options('manufacturing_statuses');
     }
+
+    public static function manufacturing_status_index($status) {
+        if ($status === null || trim((string) $status) === '') {
+            return -1;
+        }
+        $needle = self::normalize_status($status);
+        foreach (array_values(self::get_ordered_manufacturing_statuses()) as $i => $option) {
+            if (self::normalize_status($option) === $needle) {
+                return $i;
+            }
+        }
+        return -1;
+    }
+
+    public static function can_auto_advance_status($current_status, $target_status) {
+        $target_idx = self::manufacturing_status_index($target_status);
+        if ($target_idx < 0) {
+            return false;
+        }
+        if ($current_status === null || trim((string) $current_status) === '') {
+            return true;
+        }
+        $current_idx = self::manufacturing_status_index($current_status);
+        if ($current_idx < 0) {
+            return false;
+        }
+        return $current_idx < $target_idx;
+    }
+
+    private static function normalize_status($status) {
+        $status = trim((string) $status);
+        return function_exists('mb_strtolower') ? mb_strtolower($status, 'UTF-8') : strtolower($status);
+    }
     
     /**
      * Get ordered options from database.

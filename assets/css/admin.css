@@ -460,6 +460,10 @@
     width: 70px;
 }
 
+.cjs-orders-table .cjs-row-break {
+    display: none;
+}
+
 /* Stone order status dropdown (checkbox rows inside) */
 .cjs-stone-status-dropdown {
     position: relative;
@@ -970,6 +974,89 @@
 }
 
 /* Responsive Design */
+/* Orders list: wrap each order onto a second row below full-table width */
+@media (max-width: 1832px) {
+    .cjs-orders-table,
+    .cjs-orders-table tbody,
+    .cjs-orders-table tbody tr,
+    .cjs-orders-table tbody td {
+        display: block;
+    }
+
+    .cjs-orders-table thead {
+        display: none;
+    }
+
+    .cjs-orders-table tbody tr {
+        display: flex;
+        flex-wrap: wrap;
+        align-items: flex-start;
+        gap: 6px 14px;
+        padding: 10px 12px;
+        margin-bottom: 10px;
+        border: 1px solid #dcdcde;
+        border-radius: 6px;
+    }
+
+    .cjs-orders-table tbody td {
+        flex: 0 1 auto;
+        width: auto;
+        min-width: 88px;
+        max-width: 100%;
+        padding: 0;
+        border: 0;
+    }
+
+    .cjs-orders-table tbody td::before {
+        content: attr(data-label);
+        display: block;
+        margin-bottom: 3px;
+        font-size: 10px;
+        font-weight: 600;
+        line-height: 1.2;
+        text-transform: uppercase;
+        letter-spacing: 0.3px;
+        color: #80868b;
+        white-space: nowrap;
+    }
+
+    .cjs-orders-table tbody td.cjs-row-break {
+        display: block;
+        flex-basis: 100%;
+        width: 100%;
+        min-width: 0;
+        height: 0;
+        margin: 0;
+        padding: 0;
+    }
+
+    .cjs-orders-table tbody td.cjs-row-break::before {
+        content: none;
+    }
+
+    .cjs-orders-table tbody td.cjs-liejimas-cell {
+        flex: 1 1 100%;
+        max-width: none;
+    }
+
+    .cjs-orders-table tbody td.cjs-liejimas-cell textarea {
+        width: 100%;
+        max-width: none;
+        box-sizing: border-box;
+    }
+
+    .cjs-orders-table tbody td.cjs-stones-column,
+    .cjs-orders-table tbody td.cjs-stone-orders-column,
+    .cjs-orders-table tbody td.cjs-inventory-column {
+        flex: 1 1 180px;
+    }
+
+    .cjs-orders-table tbody td .cjs-inline-edit,
+    .cjs-orders-table tbody td .cjs-inline-edit.cjs-hours-input {
+        max-width: 140px;
+    }
+}
+
 @media (max-width: 768px) {
     .cjs-modal-content {
         width: 95%;

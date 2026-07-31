@@ -180,7 +180,7 @@ class CJS_Calendar_Interval {
         global $wpdb;
 
         $ext = $wpdb->get_row($wpdb->prepare(
-            "SELECT assigned_hours, completed_hours FROM {$wpdb->prefix}cjs_order_extensions WHERE order_id = %d",
+            "SELECT assigned_hours, completed_hours, manufacturing_status FROM {$wpdb->prefix}cjs_order_extensions WHERE order_id = %d",
             $order_id
         ));
 
@@ -193,7 +193,8 @@ class CJS_Calendar_Interval {
         CJS_Order_Extension::update_order_extension($order_id, ['completed_hours' => $completed]);
 
         $assigned = (float) $ext->assigned_hours;
-        if ($delta > 0 && $assigned > 0 && $completed >= $assigned) {
+        if ($delta > 0 && $assigned > 0 && $completed >= $assigned
+            && CJS_Order_Extension::can_auto_advance_status($ext->manufacturing_status, 'Pagaminta')) {
             CJS_Order_Extension::update_order_extension($order_id, ['manufacturing_status' => 'Pagaminta']);
             CJS_Logger::log('Order auto-marked Pagaminta (visos valandos atliktos)', 'info', 'order', $order_id, ['completed_hours' => $completed, 'assigned_hours' => $assigned]);
         }

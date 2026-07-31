@@ -744,12 +744,13 @@ class CJS_Admin_Orders {
                        data-order-id="<?php echo esc_attr($order_id); ?>"
                        <?php checked($ext->order_production, 1); ?> />
             </td>
-            <td>
+            <td class="cjs-liejimas-cell">
                 <textarea class="cjs-inline-edit cjs-small-textarea" 
                           data-field="casting_notes" 
                           data-order-id="<?php echo esc_attr($order_id); ?>"
                           rows="1"><?php echo esc_textarea($ext->casting_notes); ?></textarea>
             </td>
+            <td class="cjs-row-break" aria-hidden="true"></td>
             <td class="cjs-stones-column">
                 <?php
                 // Group stones by order item
