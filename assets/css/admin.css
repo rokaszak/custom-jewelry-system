@@ -435,6 +435,65 @@
     width: 75px;
 }
 
+.cjs-dates-grid {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    column-gap: 12px;
+}
+
+.cjs-dates-grid .cjs-inline-edit {
+    max-width: none;
+}
+
+.cjs-term-line {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-top: 6px;
+    min-height: 22px;
+    font-size: 12px;
+    color: #3c4043;
+    white-space: nowrap;
+}
+
+.cjs-term-line .cjs-coef-badge {
+    height: 22px;
+    min-width: 34px;
+    font-size: 11px;
+}
+
+.cjs-coef-badge {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-width: 36px;
+    height: 28px;
+    padding: 0 5px;
+    border-radius: 4px;
+    font-size: 12px;
+    font-weight: 700;
+    font-variant-numeric: tabular-nums;
+    line-height: 1;
+    white-space: nowrap;
+    box-sizing: border-box;
+}
+
+.cjs-filter-countdown {
+    display: inline-flex;
+    align-items: center;
+    padding: 3px 10px;
+    border-radius: 999px;
+    background: #111;
+    color: #fff;
+    font-size: 12px;
+    font-weight: 600;
+    white-space: nowrap;
+}
+
+.cjs-filter-stat + .cjs-filter-countdown {
+    margin-left: 10px;
+}
+
 .cjs-orders-table th.cjs-col-hours {
     width: 110px;
 }
@@ -1039,6 +1098,15 @@
         max-width: none;
     }
 
+    .cjs-orders-table tbody td.cjs-dates-cell {
+        flex: 0 1 auto;
+        max-width: none;
+    }
+
+    .cjs-orders-table tbody td.cjs-dates-cell .cjs-dates-grid {
+        grid-template-columns: repeat(3, 120px);
+    }
+
     .cjs-orders-table tbody td.cjs-liejimas-cell textarea {
         width: 100%;
         max-width: none;
@@ -1269,6 +1337,18 @@
 
 .cjs-order-types-settings-form {
     padding: 2rem;
+}
+
+.cjs-deadlines-settings-form {
+    padding: 2rem;
+}
+
+.cjs-deadlines-save-status.cjs-success {
+    color: #00a32a;
+}
+
+.cjs-deadlines-save-status.cjs-error {
+    color: #d63638;
 }
 
 .cjs-order-types-save-status.cjs-success {

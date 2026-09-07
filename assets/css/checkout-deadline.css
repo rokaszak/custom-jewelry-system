@@ -1,0 +1,248 @@
+.cjs-custom-deadline {
+    margin: 12px 0 20px;
+}
+
+.cjs-custom-deadline .cjs-hidden {
+    display: none !important;
+}
+
+.cjs-custom-deadline-question {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 10px 16px;
+}
+
+.cjs-custom-deadline-label,
+.cjs-custom-deadline-date-row label {
+    font-weight: 500;
+}
+
+.cjs-custom-deadline-options {
+    display: inline-flex;
+    gap: 6px;
+}
+
+.cjs-custom-deadline-option {
+    position: relative;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    height: 34px;
+    min-width: 64px;
+    margin: 0;
+    padding: 0 14px;
+    border: 1px solid #e4e4e7;
+    border-radius: 6px;
+    background: #fff;
+    color: #18181b;
+    font-size: 14px;
+    font-weight: 500;
+    line-height: 1;
+    cursor: pointer;
+    user-select: none;
+    box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
+    transition: background-color 0.15s ease, color 0.15s ease, border-color 0.15s ease;
+}
+
+.cjs-custom-deadline-option:hover {
+    background: #f4f4f5;
+}
+
+.cjs-custom-deadline-option input[type="radio"] {
+    position: absolute;
+    opacity: 0;
+    width: 0;
+    height: 0;
+    margin: 0;
+}
+
+.cjs-custom-deadline-option.is-checked,
+.cjs-custom-deadline-option:has(input:checked) {
+    background: #18181b;
+    border-color: #18181b;
+    color: #fff;
+}
+
+.cjs-custom-deadline-option:has(input:focus-visible) {
+    outline: 2px solid #18181b;
+    outline-offset: 2px;
+}
+
+.cjs-custom-deadline-date-row {
+    margin-top: 10px;
+}
+
+.cjs-custom-deadline-input {
+    cursor: pointer;
+    background: #fff;
+}
+
+#ui-datepicker-div {
+    display: none;
+}
+
+#ui-datepicker-div.cjs-deadline-datepicker {
+    z-index: 100001 !important;
+    width: 300px;
+    padding: 12px;
+    background: #fff;
+    border: 1px solid #e0e0e0;
+    border-radius: 10px;
+    box-shadow: 0 8px 28px rgba(0, 0, 0, 0.16);
+    font-size: 14px;
+    color: #303444;
+    box-sizing: border-box;
+}
+
+.cjs-deadline-datepicker .ui-datepicker-header {
+    position: relative;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    height: 36px;
+    margin-bottom: 8px;
+}
+
+.cjs-deadline-datepicker .ui-datepicker-title {
+    font-weight: 600;
+    text-align: center;
+}
+
+.cjs-deadline-datepicker .ui-datepicker-prev,
+.cjs-deadline-datepicker .ui-datepicker-next {
+    position: absolute;
+    top: 0;
+    width: 36px;
+    height: 36px;
+    border-radius: 50%;
+    cursor: pointer;
+    text-decoration: none;
+    color: #303444;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.cjs-deadline-datepicker .ui-datepicker-prev {
+    left: 0;
+}
+
+.cjs-deadline-datepicker .ui-datepicker-next {
+    right: 0;
+}
+
+.cjs-deadline-datepicker .ui-datepicker-prev:hover,
+.cjs-deadline-datepicker .ui-datepicker-next:hover {
+    background: #f1f2f5;
+}
+
+.cjs-deadline-datepicker .ui-datepicker-prev span,
+.cjs-deadline-datepicker .ui-datepicker-next span {
+    display: block;
+    width: 0;
+    height: 0;
+    overflow: hidden;
+    font-size: 0;
+}
+
+.cjs-deadline-datepicker .ui-datepicker-prev::before,
+.cjs-deadline-datepicker .ui-datepicker-next::before {
+    content: '';
+    display: block;
+    width: 9px;
+    height: 9px;
+    border-top: 2px solid currentColor;
+    border-right: 2px solid currentColor;
+}
+
+.cjs-deadline-datepicker .ui-datepicker-prev::before {
+    transform: rotate(-135deg);
+    margin-left: 4px;
+}
+
+.cjs-deadline-datepicker .ui-datepicker-next::before {
+    transform: rotate(45deg);
+    margin-right: 4px;
+}
+
+.cjs-deadline-datepicker .ui-state-disabled.ui-datepicker-prev,
+.cjs-deadline-datepicker .ui-state-disabled.ui-datepicker-next {
+    opacity: 0.25;
+    cursor: default;
+    pointer-events: none;
+}
+
+.cjs-deadline-datepicker .ui-datepicker-calendar {
+    width: 100%;
+    margin: 0;
+    border: 0;
+    border-collapse: collapse;
+    table-layout: fixed;
+}
+
+.cjs-deadline-datepicker .ui-datepicker-calendar th {
+    padding: 4px 0;
+    border: 0;
+    font-size: 11px;
+    font-weight: 600;
+    text-transform: uppercase;
+    color: #8a8f9c;
+    text-align: center;
+    background: transparent;
+}
+
+.cjs-deadline-datepicker .ui-datepicker-calendar td {
+    padding: 2px;
+    border: 0;
+    text-align: center;
+    background: transparent;
+}
+
+.cjs-deadline-datepicker .ui-datepicker-calendar td a,
+.cjs-deadline-datepicker .ui-datepicker-calendar td span {
+    display: block;
+    width: 34px;
+    height: 34px;
+    margin: 0 auto;
+    line-height: 34px;
+    border-radius: 50%;
+    text-decoration: none;
+    color: #303444;
+}
+
+.cjs-deadline-datepicker .ui-datepicker-calendar td a:hover {
+    background: #eef0f4;
+}
+
+.cjs-deadline-datepicker .ui-datepicker-calendar td a.ui-state-active {
+    background: #303444;
+    color: #fff;
+}
+
+.cjs-deadline-datepicker .ui-datepicker-calendar td a.ui-state-highlight:not(.ui-state-active) {
+    box-shadow: inset 0 0 0 1px #303444;
+}
+
+.cjs-deadline-datepicker .ui-datepicker-calendar td.ui-datepicker-unselectable span,
+.cjs-deadline-datepicker .ui-datepicker-calendar td.ui-state-disabled span {
+    color: #c3c6cf;
+    cursor: default;
+}
+
+.cjs-deadline-datepicker .ui-datepicker-calendar td.ui-datepicker-other-month span,
+.cjs-deadline-datepicker .ui-datepicker-calendar td.ui-datepicker-other-month a {
+    color: #c3c6cf;
+}
+
+@media (max-width: 480px) {
+    .cjs-custom-deadline-question {
+        flex-direction: column;
+        align-items: flex-start;
+    }
+
+    #ui-datepicker-div.cjs-deadline-datepicker {
+        width: calc(100vw - 32px);
+        max-width: 320px;
+    }
+}

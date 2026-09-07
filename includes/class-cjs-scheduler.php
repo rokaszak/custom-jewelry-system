@@ -237,7 +237,8 @@ class CJS_Scheduler {
             if (empty($deadline_date) || $deadline_date === '0000-00-00') {
                 $created = $wc_order->get_date_created();
                 $created_ymd = $created ? $created->date('Y-m-d') : date('Y-m-d', $this->now_ts);
-                $deadline_date = date('Y-m-d', strtotime($created_ymd . ' +10 weeks'));
+                $defaults = CJS_Deadlines::default_dates($created_ymd);
+                $deadline_date = $defaults['manufacture_by_date'];
             }
 
             $color = $this->work_color($assigned);

@@ -60,6 +60,7 @@
             $(document).on('submit', '#cjs-size-kit-settings-form', this.saveSizeKitSettings);
 
             $(document).on('submit', '#cjs-order-types-settings-form', this.saveOrderTypeSettings);
+            $(document).on('submit', '#cjs-deadlines-settings-form', this.saveDeadlineSettings);
             $(document).on('change', '.cjs-order-type-categories input[type="checkbox"]', this.enforceUniqueOrderTypeCategory);
 
             $(document).on('click', '.cjs-complete-order-accept', this.acceptCompleteOrder);
@@ -525,6 +526,34 @@
 
             var formData = $form.serialize();
             formData += '&action=cjs_save_order_type_settings';
+
+            $btn.prop('disabled', true);
+            $status.removeClass('cjs-error cjs-success').text('');
+
+            $.post(cjs_ajax.ajax_url, formData)
+                .done(function(response) {
+                    if (response.success) {
+                        $status.addClass('cjs-success').text(response.data && response.data.message ? response.data.message : 'Saved.');
+                    } else {
+                        $status.addClass('cjs-error').text(response.data && response.data.message ? response.data.message : 'Error.');
+                    }
+                })
+                .fail(function() {
+                    $status.addClass('cjs-error').text(cjs_ajax.strings && cjs_ajax.strings.error ? cjs_ajax.strings.error : 'Error.');
+                })
+                .always(function() {
+                    $btn.prop('disabled', false);
+                });
+        },
+
+        saveDeadlineSettings: function(e) {
+            e.preventDefault();
+            var $form = $('#cjs-deadlines-settings-form');
+            var $btn = $form.find('#cjs-deadlines-save-btn');
+            var $status = $form.find('.cjs-deadlines-save-status');
+
+            var formData = $form.serialize();
+            formData += '&action=cjs_save_deadline_settings';
 
             $btn.prop('disabled', true);
             $status.removeClass('cjs-error cjs-success').text('');
@@ -1108,6 +1137,9 @@
             })
             .done(function(response) {
                 if (response.success) {
+                    if (response.data && typeof response.data.term_html === 'string') {
+                        $('.cjs-term-line[data-order-id="' + orderId + '"]').html(response.data.term_html);
+                    }
                     CJS.showNotice(cjs_ajax.strings.saved, 'success');
                 } else {
                     CJS.showNotice('Update failed: ' + response.data.message, 'error');
@@ -1117,7 +1149,7 @@
                 CJS.showNotice(cjs_ajax.strings.error, 'error');
             });
         },
-        
+
         updateStoneOrderField: function(stoneOrderId, field, value) {
             return $.post(cjs_ajax.ajax_url, {
                 action: 'cjs_update_stone_order',

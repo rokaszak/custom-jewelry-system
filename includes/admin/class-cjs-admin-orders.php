@@ -183,6 +183,9 @@ class CJS_Admin_Orders {
                         <span class="cjs-filter-stat"><strong><?php echo esc_html(self::format_hours($stats['assigned'])); ?>h</strong> <?php _e('paskirta', 'custom-jewelry-system'); ?></span>
                         <span class="cjs-filter-stat"><strong><?php echo esc_html(self::format_hours($stats['done'])); ?>h</strong> <?php _e('pabaigta', 'custom-jewelry-system'); ?></span>
                         <span class="cjs-filter-stat"><strong><?php echo esc_html(self::format_hours($stats['left'])); ?>h</strong> <?php _e('likę', 'custom-jewelry-system'); ?></span>
+                        <?php foreach (self::date_filter_countdowns($date_filters) as $countdown) : ?>
+                            <span class="cjs-filter-countdown" title="<?php echo esc_attr($countdown['date']); ?>"><?php echo esc_html($countdown['label']); ?>: <?php echo esc_html(sprintf(__('%d d.', 'custom-jewelry-system'), $countdown['days'])); ?></span>
+                        <?php endforeach; ?>
                     </div>
                 </form>
             </div>
@@ -601,6 +604,24 @@ class CJS_Admin_Orders {
         return 1;
     }
     
+    private static function date_filter_countdowns($date_filters) {
+        $labels = [
+            'manufacture_to' => __('Pagaminti iki', 'custom-jewelry-system'),
+            'finish_to' => __('Užprabuoti iki', 'custom-jewelry-system'),
+            'deliver_to' => __('Pristatyti iki', 'custom-jewelry-system')
+        ];
+        $out = [];
+        foreach ($labels as $key => $label) {
+            $value = $date_filters[$key] ?? '';
+            $days = CJS_Deadlines::days_until($value);
+            if ($days === null) {
+                continue;
+            }
+            $out[] = ['label' => $label, 'date' => $value, 'days' => $days];
+        }
+        return $out;
+    }
+
     private static function get_date_filters() {
         $filters = [];
         foreach (['manufacture_from', 'manufacture_to', 'finish_from', 'finish_to', 'deliver_from', 'deliver_to'] as $key) {
@@ -692,23 +713,22 @@ class CJS_Admin_Orders {
                 </a>
             </td>
             <td><?php echo esc_html($order->get_formatted_billing_full_name()); ?></td>
-            <td>
-                <input type="date" class="cjs-inline-edit"
-                       data-field="manufacture_by_date"
-                       data-order-id="<?php echo esc_attr($order_id); ?>"
-                       value="<?php echo esc_attr($ext->manufacture_by_date); ?>" />
-            </td>
-            <td>
-                <input type="date" class="cjs-inline-edit"
-                       data-field="finish_by_date"
-                       data-order-id="<?php echo esc_attr($order_id); ?>"
-                       value="<?php echo esc_attr($ext->finish_by_date); ?>" />
-            </td>
-            <td>
-                <input type="date" class="cjs-inline-edit" 
-                       data-field="deliver_by_date" 
-                       data-order-id="<?php echo esc_attr($order_id); ?>"
-                       value="<?php echo esc_attr($ext->deliver_by_date); ?>" />
+            <td class="cjs-dates-cell" colspan="3">
+                <div class="cjs-dates-grid">
+                    <input type="date" class="cjs-inline-edit"
+                           data-field="manufacture_by_date"
+                           data-order-id="<?php echo esc_attr($order_id); ?>"
+                           value="<?php echo esc_attr($ext->manufacture_by_date); ?>" />
+                    <input type="date" class="cjs-inline-edit"
+                           data-field="finish_by_date"
+                           data-order-id="<?php echo esc_attr($order_id); ?>"
+                           value="<?php echo esc_attr($ext->finish_by_date); ?>" />
+                    <input type="date" class="cjs-inline-edit"
+                           data-field="deliver_by_date"
+                           data-order-id="<?php echo esc_attr($order_id); ?>"
+                           value="<?php echo esc_attr($ext->deliver_by_date); ?>" />
+                </div>
+                <div class="cjs-term-line" data-order-id="<?php echo esc_attr($order_id); ?>"><?php echo CJS_Deadlines::render_term_summary($order, $ext->deliver_by_date); ?></div>
             </td>
             <td style="color: <?php echo esc_attr($days_color); ?>;">
                 <?php

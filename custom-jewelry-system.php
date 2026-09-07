@@ -3,7 +3,7 @@
  * Plugin Name: Custom Jewelry System
  * Plugin URI: https://Proven.lt/
  * Description: Advanced order management and stone tracking system for jewelers
- * Version: 1.7.2
+ * Version: 1.8.2
  * Author: Rokas Zakarauskas
  * Text Domain: custom-jewelry-system
  * Domain Path: /languages
@@ -19,7 +19,7 @@ if (!defined('ABSPATH')) {
 }
 
 // Define plugin constants
-define('CJS_VERSION', '1.7.2');
+define('CJS_VERSION', '1.8.2');
 define('CJS_PLUGIN_DIR', plugin_dir_path(__FILE__));
 define('CJS_PLUGIN_URL', plugin_dir_url(__FILE__));
 define('CJS_PLUGIN_BASENAME', plugin_basename(__FILE__));
@@ -87,6 +87,7 @@ class CustomJewelrySystem {
         require_once CJS_PLUGIN_DIR . 'includes/models/class-cjs-calendar-interval.php';
 
         // Scheduler
+        require_once CJS_PLUGIN_DIR . 'includes/class-cjs-deadlines.php';
         require_once CJS_PLUGIN_DIR . 'includes/class-cjs-scheduler.php';
 
         // Admin includes
@@ -108,6 +109,7 @@ class CustomJewelrySystem {
         // Frontend includes
         require_once CJS_PLUGIN_DIR . 'includes/class-cjs-frontend.php';
         require_once CJS_PLUGIN_DIR . 'includes/class-cjs-size-kit.php';
+        require_once CJS_PLUGIN_DIR . 'includes/class-cjs-checkout-deadline.php';
         require_once CJS_PLUGIN_DIR . 'includes/class-cjs-order-type-assigner.php';
     }
     
@@ -131,6 +133,7 @@ class CustomJewelrySystem {
         CJS_File_Handler::init();
         CJS_Frontend::init();
         CJS_Size_Kit::init();
+        CJS_Checkout_Deadline::init();
         CJS_Order_Type_Assigner::init();
         
         // Add custom order statuses for stones

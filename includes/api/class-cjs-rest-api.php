@@ -47,6 +47,7 @@ class CJS_REST_API {
         add_action('wp_ajax_cjs_update_options_order', [__CLASS__, 'ajax_update_options_order']);
         add_action('wp_ajax_cjs_save_size_kit_settings', [__CLASS__, 'ajax_save_size_kit_settings']);
         add_action('wp_ajax_cjs_save_order_type_settings', [__CLASS__, 'ajax_save_order_type_settings']);
+        add_action('wp_ajax_cjs_save_deadline_settings', [__CLASS__, 'ajax_save_deadline_settings']);
         add_action('wp_ajax_cjs_complete_wc_order', [__CLASS__, 'ajax_complete_wc_order']);
         // Inventory item handlers
         add_action('wp_ajax_cjs_create_inventory_item', [__CLASS__, 'ajax_create_inventory_item']);
@@ -502,7 +503,12 @@ class CJS_REST_API {
 
         CJS_Logger::log("Order field '{$field}' updated via AJAX", 'info', 'order', $order_id, ['field' => $field, 'value' => $value]);
 
-        wp_send_json_success(['message' => 'Updated successfully']);
+        $response = ['message' => 'Updated successfully'];
+        if ($field === 'deliver_by_date') {
+            $response['term_html'] = CJS_Deadlines::render_term_summary(wc_get_order($order_id), $value);
+        }
+
+        wp_send_json_success($response);
     }
     
     /**
@@ -1550,6 +1556,26 @@ class CJS_REST_API {
         update_option('cjs_order_type_category_map', $map);
 
         wp_send_json_success(['message' => __('Settings saved.', 'custom-jewelry-system')]);
+    }
+
+    public static function ajax_save_deadline_settings() {
+        if (!isset($_POST['cjs_deadlines_nonce']) || !wp_verify_nonce(sanitize_text_field(wp_unslash($_POST['cjs_deadlines_nonce'])), 'cjs_save_deadline_settings')) {
+            wp_send_json_error(['message' => 'Invalid nonce']);
+            return;
+        }
+
+        self::check_permission();
+
+        $saved = CJS_Deadlines::save_settings([
+            'checkout_enabled' => !empty($_POST['cjs_deadline_checkout_enabled']) ? 1 : 0,
+            'min_days' => isset($_POST['cjs_deadline_min_days']) ? absint($_POST['cjs_deadline_min_days']) : 0,
+            'max_days' => isset($_POST['cjs_deadline_max_days']) ? absint($_POST['cjs_deadline_max_days']) : 0,
+            'default_days' => isset($_POST['cjs_deadline_default_days']) ? absint($_POST['cjs_deadline_default_days']) : 0
+        ]);
+
+        CJS_Logger::log('Terminų nustatymai atnaujinti', 'info', 'settings', null, $saved);
+
+        wp_send_json_success(['message' => __('Settings saved.', 'custom-jewelry-system'), 'settings' => $saved]);
     }
 
     public static function ajax_complete_wc_order() {

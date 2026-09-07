@@ -599,34 +599,23 @@ class CJS_Order_Extension {
             $order_date = new DateTime();
         }
         
-        // Check if dates are empty or invalid and set defaults
+        $defaults = CJS_Deadlines::default_dates($order_date);
         $finish_by_date = $data['finish_by_date'] ?? '';
         $deliver_by_date = $data['deliver_by_date'] ?? '';
-        
-        // If dates are empty, null, or invalid (0000-00-00), set defaults
-        if (empty($finish_by_date) || $finish_by_date === '0000-00-00' || $finish_by_date === 'null') {
-            $finish_date = clone $order_date;
-            $finish_date->add(new DateInterval('P11W'));
-            $finish_by_date = $finish_date->format('Y-m-d');
-            
-            // Update the database with the default date
-            self::update_order_extension($order_id, ['finish_by_date' => $finish_by_date]);
-        }
-        
-        if (empty($deliver_by_date) || $deliver_by_date === '0000-00-00' || $deliver_by_date === 'null') {
-            $deliver_date = clone $order_date;
-            $deliver_date->add(new DateInterval('P12W'));
-            $deliver_by_date = $deliver_date->format('Y-m-d');
 
-            // Update the database with the default date
+        if (empty($deliver_by_date) || $deliver_by_date === '0000-00-00' || $deliver_by_date === 'null') {
+            $deliver_by_date = $defaults['deliver_by_date'];
             self::update_order_extension($order_id, ['deliver_by_date' => $deliver_by_date]);
+        }
+
+        if (empty($finish_by_date) || $finish_by_date === '0000-00-00' || $finish_by_date === 'null') {
+            $finish_by_date = CJS_Deadlines::add_days($deliver_by_date, -CJS_Deadlines::FINISH_GAP_DAYS);
+            self::update_order_extension($order_id, ['finish_by_date' => $finish_by_date]);
         }
 
         $manufacture_by_date = $data['manufacture_by_date'] ?? '';
         if (empty($manufacture_by_date) || $manufacture_by_date === '0000-00-00' || $manufacture_by_date === 'null') {
-            $manufacture_date = new DateTime($finish_by_date);
-            $manufacture_date->sub(new DateInterval('P1W'));
-            $manufacture_by_date = $manufacture_date->format('Y-m-d');
+            $manufacture_by_date = CJS_Deadlines::add_days($finish_by_date, -CJS_Deadlines::FINISH_GAP_DAYS);
             self::update_order_extension($order_id, ['manufacture_by_date' => $manufacture_by_date]);
         }
 
@@ -677,23 +666,15 @@ class CJS_Order_Extension {
                 $order_date = new DateTime();
             }
             
-            // Calculate default dates: 11 weeks for finish, 12 weeks for deliver
-            $manufacture_date = clone $order_date;
-            $manufacture_date->add(new DateInterval('P10W'));
-
-            $finish_date = clone $order_date;
-            $finish_date->add(new DateInterval('P11W'));
-
-            $deliver_date = clone $order_date;
-            $deliver_date->add(new DateInterval('P12W'));
+            $defaults = CJS_Deadlines::default_dates($order_date);
 
             $result = $wpdb->insert(
                 $wpdb->prefix . 'cjs_order_extensions',
                 [
                     'order_id' => $order_id,
-                    'manufacture_by_date' => $manufacture_date->format('Y-m-d'),
-                    'finish_by_date' => $finish_date->format('Y-m-d'),
-                    'deliver_by_date' => $deliver_date->format('Y-m-d'),
+                    'manufacture_by_date' => $defaults['manufacture_by_date'],
+                    'finish_by_date' => $defaults['finish_by_date'],
+                    'deliver_by_date' => $defaults['deliver_by_date'],
                     'order_type' => 'Įprastas',
                     'assigned_hours' => $order ? self::calculate_default_hours($order) : 10,
                     'completed_hours' => 0,

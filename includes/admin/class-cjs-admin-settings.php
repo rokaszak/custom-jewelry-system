@@ -31,6 +31,10 @@ class CJS_Admin_Settings {
                    class="nav-tab <?php echo $active_tab === 'order_types' ? 'nav-tab-active' : ''; ?>">
                     <?php _e('Order Types', 'custom-jewelry-system'); ?>
                 </a>
+                <a href="?page=cjs-settings&tab=deadlines"
+                   class="nav-tab <?php echo $active_tab === 'deadlines' ? 'nav-tab-active' : ''; ?>">
+                    <?php _e('Terminai', 'custom-jewelry-system'); ?>
+                </a>
                 <a href="?page=cjs-settings&tab=log"
                    class="nav-tab <?php echo $active_tab === 'log' ? 'nav-tab-active' : ''; ?>">
                     <?php _e('Activity Log', 'custom-jewelry-system'); ?>
@@ -45,6 +49,8 @@ class CJS_Admin_Settings {
                     self::render_size_kit_tab();
                 } elseif ($active_tab === 'order_types') {
                     self::render_order_types_tab();
+                } elseif ($active_tab === 'deadlines') {
+                    self::render_deadlines_tab();
                 } else {
                     self::render_log_tab();
                 }
@@ -324,6 +330,68 @@ class CJS_Admin_Settings {
                 <p>
                     <button type="submit" class="button button-primary" id="cjs-order-types-save-btn"><?php _e('Save Order Type settings', 'custom-jewelry-system'); ?></button>
                     <span class="cjs-order-types-save-status" style="margin-left: 10px;"></span>
+                </p>
+            </form>
+        </div>
+        <?php
+    }
+
+    private static function render_deadlines_tab() {
+        $settings = CJS_Deadlines::get_settings();
+        $example = CJS_Deadlines::default_dates(CJS_Deadlines::today());
+        ?>
+        <div class="cjs-deadlines-settings">
+            <form id="cjs-deadlines-settings-form" class="cjs-deadlines-settings-form">
+                <?php wp_nonce_field('cjs_save_deadline_settings', 'cjs_deadlines_nonce'); ?>
+
+                <div class="cjs-option-section">
+                    <h3><?php _e('Standartinis terminas', 'custom-jewelry-system'); ?></h3>
+                    <p>
+                        <label for="cjs_deadline_default_days"><?php _e('Standartinis „Pristatyti iki“ terminas (dienomis nuo užsakymo)', 'custom-jewelry-system'); ?></label><br>
+                        <input type="number" id="cjs_deadline_default_days" name="cjs_deadline_default_days" min="1" step="1" class="small-text"
+                               value="<?php echo esc_attr($settings['default_days']); ?>" />
+                    </p>
+                    <p class="description">
+                        <?php
+                        printf(
+                            __('Naujiems užsakymams automatiškai priskiriama: „Pristatyti iki“ = užsakymo data + %1$d d., „Užprabuoti iki“ = %2$d d. anksčiau, „Pagaminti iki“ = %3$d d. anksčiau. Pvz. šiandien pateiktam užsakymui: pagaminti iki %4$s, užprabuoti iki %5$s, pristatyti iki %6$s. Šis terminas taip pat naudojamas skaičiuojant užsakymų sąrašo koeficientą (užsakymo terminas / standartinis terminas).', 'custom-jewelry-system'),
+                            $settings['default_days'],
+                            CJS_Deadlines::FINISH_GAP_DAYS,
+                            CJS_Deadlines::MANUFACTURE_GAP_DAYS,
+                            $example['manufacture_by_date'],
+                            $example['finish_by_date'],
+                            $example['deliver_by_date']
+                        );
+                        ?>
+                    </p>
+                </div>
+
+                <div class="cjs-option-section">
+                    <h3><?php _e('Individualus terminas checkout puslapyje', 'custom-jewelry-system'); ?></h3>
+                    <p>
+                        <label>
+                            <input type="checkbox" name="cjs_deadline_checkout_enabled" value="1" <?php checked($settings['checkout_enabled'], 1); ?> />
+                            <?php _e('Rodyti klausimą „Ar buvome sutarę individualų gamybos terminą?“ checkout puslapyje', 'custom-jewelry-system'); ?>
+                        </label>
+                    </p>
+                    <p>
+                        <label for="cjs_deadline_min_days"><?php _e('Mažiausias leidžiamas terminas (dienomis nuo užsakymo dienos)', 'custom-jewelry-system'); ?></label><br>
+                        <input type="number" id="cjs_deadline_min_days" name="cjs_deadline_min_days" min="0" step="1" class="small-text"
+                               value="<?php echo esc_attr($settings['min_days']); ?>" />
+                    </p>
+                    <p>
+                        <label for="cjs_deadline_max_days"><?php _e('Didžiausias leidžiamas terminas (dienomis nuo užsakymo dienos, 0 = be ribos)', 'custom-jewelry-system'); ?></label><br>
+                        <input type="number" id="cjs_deadline_max_days" name="cjs_deadline_max_days" min="0" step="1" class="small-text"
+                               value="<?php echo esc_attr($settings['max_days']); ?>" />
+                    </p>
+                    <p class="description">
+                        <?php _e('Pasirinkęs „Taip“, klientas kalendoriuje renkasi „Pristatyti iki“ datą. Datos už šių ribų kalendoriuje neaktyvios, o serveris atmeta užsakymą su netinkama data. Pasirinkus „Ne“, lieka standartinis terminas.', 'custom-jewelry-system'); ?>
+                    </p>
+                </div>
+
+                <p>
+                    <button type="submit" class="button button-primary" id="cjs-deadlines-save-btn"><?php _e('Išsaugoti terminų nustatymus', 'custom-jewelry-system'); ?></button>
+                    <span class="cjs-deadlines-save-status" style="margin-left: 10px;"></span>
                 </p>
             </form>
         </div>
