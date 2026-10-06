@@ -162,7 +162,7 @@ class CJS_Scheduler {
         global $wpdb;
 
         $all_statuses = array_keys(wc_get_order_statuses());
-        $excluded = ['wc-completed', 'wc-cancelled', 'wc-refunded', 'wc-failed'];
+        $excluded = ['wc-completed', 'wc-cancelled', 'wc-refunded', 'wc-failed', 'wc-checkout-draft'];
         $allowed = [];
         foreach ($all_statuses as $status) {
             if (!in_array($status, $excluded, true)) {

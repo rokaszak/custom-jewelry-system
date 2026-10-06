@@ -47,6 +47,108 @@
     text-decoration: none;
 }
 
+body.cjs-modal-open {
+    overflow: hidden;
+}
+
+#cjs-stone-modal {
+    overflow: hidden;
+    overscroll-behavior: contain;
+}
+
+#cjs-stone-modal .cjs-stone-modal-content {
+    display: flex;
+    flex-direction: column;
+    box-sizing: border-box;
+    height: calc(100vh - 32px);
+    height: calc(100dvh - 32px);
+    margin: 16px auto;
+    padding: 0;
+    overflow: hidden;
+    border: 1px solid #e4e4e7;
+    border-radius: 6px;
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.18);
+}
+
+#cjs-stone-modal .cjs-stone-modal-header {
+    flex-shrink: 0;
+    padding: 16px 20px 14px;
+    border-bottom: 1px solid #e4e4e7;
+}
+
+#cjs-stone-modal .cjs-stone-modal-header h2 {
+    margin: 0 32px 0 0;
+    font-size: 18px;
+    line-height: 1.4;
+}
+
+#cjs-stone-modal .cjs-modal-close {
+    top: 8px;
+    right: 14px;
+}
+
+.cjs-stone-casting-notes {
+    margin-top: 12px;
+    padding: 10px 12px;
+    background: #f4f4f5;
+    border: 1px solid #e4e4e7;
+    border-radius: 6px;
+}
+
+.cjs-stone-casting-notes[hidden] {
+    display: none;
+}
+
+.cjs-stone-casting-notes-label {
+    margin-bottom: 4px;
+    font-size: 11px;
+    font-weight: 600;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+    color: #71717a;
+}
+
+.cjs-stone-casting-notes-text {
+    max-height: 30vh;
+    overflow-y: auto;
+    font-size: 13px;
+    line-height: 1.5;
+    color: #18181b;
+    white-space: pre-wrap;
+    overflow-wrap: anywhere;
+}
+
+#cjs-stone-modal .cjs-stone-modal-form {
+    display: flex;
+    flex-direction: column;
+    flex: 1;
+    min-height: 0;
+    margin: 0;
+}
+
+#cjs-stone-modal .cjs-stone-modal-body {
+    flex: 1;
+    min-height: 0;
+    overflow-y: auto;
+    overscroll-behavior: contain;
+    padding: 16px 20px;
+}
+
+#cjs-stone-modal .cjs-stone-modal-footer {
+    display: flex;
+    flex-shrink: 0;
+    justify-content: flex-end;
+    gap: 8px;
+    margin: 0;
+    padding: 12px 20px;
+    border-top: 1px solid #e4e4e7;
+    background: #fafafa;
+}
+
+#cjs-stone-modal .cjs-stone-modal-footer .button {
+    margin-left: 0;
+}
+
 /* Form Styles */
 .cjs-form-row {
     margin-bottom: 15px;

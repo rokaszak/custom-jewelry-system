@@ -82,170 +82,176 @@ class CJS_Modals {
     public static function render_stone_modal() {
         ?>
         <div id="cjs-stone-modal" class="cjs-modal" style="display:none;">
-            <div class="cjs-modal-content">
-                <span class="cjs-modal-close">&times;</span>
-                <h2><span id="cjs-stone-modal-title"><?php _e('Add Required Stone', 'custom-jewelry-system'); ?></span></h2>
-                <form id="cjs-stone-form">
+            <div class="cjs-modal-content cjs-stone-modal-content">
+                <div class="cjs-stone-modal-header">
+                    <span class="cjs-modal-close">&times;</span>
+                    <h2><span id="cjs-stone-modal-title"><?php _e('Add Required Stone', 'custom-jewelry-system'); ?></span></h2>
+                    <div id="cjs-stone-casting-notes" class="cjs-stone-casting-notes" hidden>
+                        <div class="cjs-stone-casting-notes-label"><?php _e('Liejimas', 'custom-jewelry-system'); ?></div>
+                        <div id="cjs-stone-casting-notes-text" class="cjs-stone-casting-notes-text"></div>
+                    </div>
+                </div>
+                <form id="cjs-stone-form" class="cjs-stone-modal-form">
                     <input type="hidden" id="stone-id" />
                     <input type="hidden" id="stone-order-id" />
                     <input type="hidden" id="stone-order-item-id" />
                     <input type="hidden" id="stone-edit-mode" value="0" />
+                    <div class="cjs-stone-modal-body">
+                        <div id="cjs-stone-product-selector" style="display:none; margin-bottom: 15px;">
+                            <label><strong><?php _e('Select Product:', 'custom-jewelry-system'); ?></strong></label>
+                            <select id="stone-product-select" style="width: 100%;">
+                                <option value=""><?php _e('Select a product...', 'custom-jewelry-system'); ?></option>
+                            </select>
+                        </div>
                     
-                    <div id="cjs-stone-product-selector" style="display:none; margin-bottom: 15px;">
-                        <label><strong><?php _e('Select Product:', 'custom-jewelry-system'); ?></strong></label>
-                        <select id="stone-product-select" style="width: 100%;">
-                            <option value=""><?php _e('Select a product...', 'custom-jewelry-system'); ?></option>
-                        </select>
-                    </div>
+                        <div id="cjs-stone-product-info" style="display:none; background: #f0f0f0; padding: 10px; margin-bottom: 15px; border-radius: 5px;">
+                            <strong><?php _e('Product:', 'custom-jewelry-system'); ?></strong> <span id="stone-product-name"></span>
+                        </div>
                     
-                    <div id="cjs-stone-product-info" style="display:none; background: #f0f0f0; padding: 10px; margin-bottom: 15px; border-radius: 5px;">
-                        <strong><?php _e('Product:', 'custom-jewelry-system'); ?></strong> <span id="stone-product-name"></span>
-                    </div>
-                    
-                    <div class="cjs-form-row">
-                        <label><?php _e('Akmens Tipas', 'custom-jewelry-system'); ?></label>
-                        <select id="stone-type">
-                            <option value=""><?php _e('Select...', 'custom-jewelry-system'); ?></option>
-                            <?php
-                            $types = get_option('cjs_stone_types', []);
-                            foreach ($types as $value => $label) {
-                                echo '<option value="' . esc_attr($value) . '">' . esc_html($value) . '</option>';
-                            }
-                            ?>
-                        </select>
-                        <button type="button" class="button-small" onclick="CJS.addNewOption('stone_types')"><?php _e('+', 'custom-jewelry-system'); ?></button>
-                    </div>
-                    
-                    <div class="cjs-form-row">
-                        <label><?php _e('Akmens Kilmė', 'custom-jewelry-system'); ?> *</label>
-                        <select id="stone-origin" required>
-                            <?php
-                            $origins = get_option('cjs_stone_origins', []);
-                            foreach ($origins as $value => $label) {
-                                echo '<option value="' . esc_attr($value) . '">' . esc_html($value) . '</option>';
-                            }
-                            ?>
-                        </select>
-                        <button type="button" class="button-small" onclick="CJS.addNewOption('stone_origins')"><?php _e('+', 'custom-jewelry-system'); ?></button>
-                    </div>
-                    
-                    <div class="cjs-form-row">
-                        <label><?php _e('Akmens Forma', 'custom-jewelry-system'); ?></label>
-                        <select id="stone-shape">
-                            <option value=""><?php _e('Select...', 'custom-jewelry-system'); ?></option>
-                            <?php
-                            $shapes = get_option('cjs_stone_shapes', []);
-                            foreach ($shapes as $shape) {
-                                echo '<option value="' . esc_attr($shape) . '">' . esc_html($shape) . '</option>';
-                            }
-                            ?>
-                        </select>
-                        <button type="button" class="button-small" onclick="CJS.addNewOption('stone_shapes')"><?php _e('+', 'custom-jewelry-system'); ?></button>
-                    </div>
-                    
-                    <div class="cjs-form-row">
-                        <label><?php _e('Akmens Kiekis', 'custom-jewelry-system'); ?> *</label>
-                        <input type="number" id="stone-quantity" min="1" required />
-                    </div>
-                    
-                    <div class="cjs-form-row">
-                        <label><?php _e('Akmens Dydis', 'custom-jewelry-system'); ?></label>
-                        <div style="display: flex; gap: 10px;">
-                            <input type="number" id="stone-size-value" step="0.001" min="0" style="flex: 2;" placeholder="<?php esc_attr_e('Size value', 'custom-jewelry-system'); ?>" />
-                            <select id="stone-size-unit" style="flex: 1;">
+                        <div class="cjs-form-row">
+                            <label><?php _e('Akmens Tipas', 'custom-jewelry-system'); ?></label>
+                            <select id="stone-type">
+                                <option value=""><?php _e('Select...', 'custom-jewelry-system'); ?></option>
                                 <?php
-                                $size_units = get_option('cjs_stone_size_units', []);
-                                foreach ($size_units as $value => $label) {
-                                    $selected = $value === 'carats' ? 'selected' : '';
-                                    echo '<option value="' . esc_attr($value) . '" ' . $selected . '>' . esc_html($label) . '</option>';
+                                $types = get_option('cjs_stone_types', []);
+                                foreach ($types as $value => $label) {
+                                    echo '<option value="' . esc_attr($value) . '">' . esc_html($value) . '</option>';
                                 }
                                 ?>
                             </select>
+                            <button type="button" class="button-small" onclick="CJS.addNewOption('stone_types')"><?php _e('+', 'custom-jewelry-system'); ?></button>
                         </div>
-                        <small style="color: #666;"><?php _e('Choose carats (ct) or millimeters (mm)', 'custom-jewelry-system'); ?></small>
-                    </div>
                     
-                    <div class="cjs-form-row">
-                        <label><?php _e('Akmens Spalva', 'custom-jewelry-system'); ?></label>
-                        <select id="stone-color">
-                            <option value=""><?php _e('Select...', 'custom-jewelry-system'); ?></option>
-                            <?php
-                            $colors = get_option('cjs_stone_colors', []);
-                            foreach ($colors as $value => $label) {
-                                echo '<option value="' . esc_attr($value) . '">' . esc_html($value) . '</option>';
-                            }
-                            ?>
-                        </select>
-                        <button type="button" class="button-small" onclick="CJS.addNewOption('stone_colors')"><?php _e('+', 'custom-jewelry-system'); ?></button>
-                    </div>
+                        <div class="cjs-form-row">
+                            <label><?php _e('Akmens Kilmė', 'custom-jewelry-system'); ?> *</label>
+                            <select id="stone-origin" required>
+                                <?php
+                                $origins = get_option('cjs_stone_origins', []);
+                                foreach ($origins as $value => $label) {
+                                    echo '<option value="' . esc_attr($value) . '">' . esc_html($value) . '</option>';
+                                }
+                                ?>
+                            </select>
+                            <button type="button" class="button-small" onclick="CJS.addNewOption('stone_origins')"><?php _e('+', 'custom-jewelry-system'); ?></button>
+                        </div>
                     
-                    <div class="cjs-form-row">
-                        <label><?php _e('Akmens Įtvirtinimas', 'custom-jewelry-system'); ?></label>
-                        <select id="stone-setting">
-                            <option value=""><?php _e('Select...', 'custom-jewelry-system'); ?></option>
-                            <?php
-                            $settings = get_option('cjs_stone_settings', []);
-                            foreach ($settings as $value => $label) {
-                                echo '<option value="' . esc_attr($value) . '">' . esc_html($value) . '</option>';
-                            }
-                            ?>
-                        </select>
-                        <button type="button" class="button-small" onclick="CJS.addNewOption('stone_settings')"><?php _e('+', 'custom-jewelry-system'); ?></button>
-                    </div>
+                        <div class="cjs-form-row">
+                            <label><?php _e('Akmens Forma', 'custom-jewelry-system'); ?></label>
+                            <select id="stone-shape">
+                                <option value=""><?php _e('Select...', 'custom-jewelry-system'); ?></option>
+                                <?php
+                                $shapes = get_option('cjs_stone_shapes', []);
+                                foreach ($shapes as $shape) {
+                                    echo '<option value="' . esc_attr($shape) . '">' . esc_html($shape) . '</option>';
+                                }
+                                ?>
+                            </select>
+                            <button type="button" class="button-small" onclick="CJS.addNewOption('stone_shapes')"><?php _e('+', 'custom-jewelry-system'); ?></button>
+                        </div>
                     
-                    <div class="cjs-form-row">
-                        <label><?php _e('Akmens Skaidrumas', 'custom-jewelry-system'); ?></label>
-                        <select id="stone-clarity">
-                            <option value=""><?php _e('Select...', 'custom-jewelry-system'); ?></option>
-                            <?php
-                            $clarities = get_option('cjs_stone_clarities', []);
-                            foreach ($clarities as $clarity) {
-                                echo '<option value="' . esc_attr($clarity) . '">' . esc_html($clarity) . '</option>';
-                            }
-                            ?>
-                        </select>
-                        <button type="button" class="button-small" onclick="CJS.addNewOption('stone_clarities')"><?php _e('+', 'custom-jewelry-system'); ?></button>
-                    </div>
+                        <div class="cjs-form-row">
+                            <label><?php _e('Akmens Kiekis', 'custom-jewelry-system'); ?> *</label>
+                            <input type="number" id="stone-quantity" min="1" required />
+                        </div>
                     
-                    <div class="cjs-form-row">
-                        <label><?php _e('Akmens Pjūvio Klasė', 'custom-jewelry-system'); ?></label>
-                        <select id="stone-cut-grade">
-                            <option value=""><?php _e('Select...', 'custom-jewelry-system'); ?></option>
-                            <?php
-                            $cut_grades = get_option('cjs_stone_cut_grades', []);
-                            foreach ($cut_grades as $grade) {
-                                echo '<option value="' . esc_attr($grade) . '">' . esc_html($grade) . '</option>';
-                            }
-                            ?>
-                        </select>
-                        <button type="button" class="button-small" onclick="CJS.addNewOption('stone_cut_grades')"><?php _e('+', 'custom-jewelry-system'); ?></button>
-                    </div>
+                        <div class="cjs-form-row">
+                            <label><?php _e('Akmens Dydis', 'custom-jewelry-system'); ?></label>
+                            <div style="display: flex; gap: 10px;">
+                                <input type="number" id="stone-size-value" step="0.001" min="0" style="flex: 2;" placeholder="<?php esc_attr_e('Size value', 'custom-jewelry-system'); ?>" />
+                                <select id="stone-size-unit" style="flex: 1;">
+                                    <?php
+                                    $size_units = get_option('cjs_stone_size_units', []);
+                                    foreach ($size_units as $value => $label) {
+                                        $selected = $value === 'carats' ? 'selected' : '';
+                                        echo '<option value="' . esc_attr($value) . '" ' . $selected . '>' . esc_html($label) . '</option>';
+                                    }
+                                    ?>
+                                </select>
+                            </div>
+                            <small style="color: #666;"><?php _e('Choose carats (ct) or millimeters (mm)', 'custom-jewelry-system'); ?></small>
+                        </div>
                     
-                    <div class="cjs-form-row">
-                        <label><?php _e('Kilmės Šalis', 'custom-jewelry-system'); ?></label>
-                        <select id="stone-origin-country">
-                            <option value=""><?php _e('Select...', 'custom-jewelry-system'); ?></option>
-                            <?php
-                            $countries = get_option('cjs_origin_countries', []);
-                            foreach ($countries as $country) {
-                                echo '<option value="' . esc_attr($country) . '">' . esc_html($country) . '</option>';
-                            }
-                            ?>
-                        </select>
-                        <button type="button" class="button-small" onclick="CJS.addNewOption('origin_countries')"><?php _e('+', 'custom-jewelry-system'); ?></button>
-                    </div>
+                        <div class="cjs-form-row">
+                            <label><?php _e('Akmens Spalva', 'custom-jewelry-system'); ?></label>
+                            <select id="stone-color">
+                                <option value=""><?php _e('Select...', 'custom-jewelry-system'); ?></option>
+                                <?php
+                                $colors = get_option('cjs_stone_colors', []);
+                                foreach ($colors as $value => $label) {
+                                    echo '<option value="' . esc_attr($value) . '">' . esc_html($value) . '</option>';
+                                }
+                                ?>
+                            </select>
+                            <button type="button" class="button-small" onclick="CJS.addNewOption('stone_colors')"><?php _e('+', 'custom-jewelry-system'); ?></button>
+                        </div>
                     
-                    <div class="cjs-form-row">
-                        <label><?php _e('Darbo Akmens Sertifikatas', 'custom-jewelry-system'); ?></label>
-                        <input type="text" id="stone-certificate" />
-                    </div>
+                        <div class="cjs-form-row">
+                            <label><?php _e('Akmens Įtvirtinimas', 'custom-jewelry-system'); ?></label>
+                            <select id="stone-setting">
+                                <option value=""><?php _e('Select...', 'custom-jewelry-system'); ?></option>
+                                <?php
+                                $settings = get_option('cjs_stone_settings', []);
+                                foreach ($settings as $value => $label) {
+                                    echo '<option value="' . esc_attr($value) . '">' . esc_html($value) . '</option>';
+                                }
+                                ?>
+                            </select>
+                            <button type="button" class="button-small" onclick="CJS.addNewOption('stone_settings')"><?php _e('+', 'custom-jewelry-system'); ?></button>
+                        </div>
                     
-                    <div class="cjs-form-row">
-                        <label><?php _e('Custom Comment', 'custom-jewelry-system'); ?></label>
-                        <textarea id="stone-comment" rows="3"></textarea>
-                    </div>
+                        <div class="cjs-form-row">
+                            <label><?php _e('Akmens Skaidrumas', 'custom-jewelry-system'); ?></label>
+                            <select id="stone-clarity">
+                                <option value=""><?php _e('Select...', 'custom-jewelry-system'); ?></option>
+                                <?php
+                                $clarities = get_option('cjs_stone_clarities', []);
+                                foreach ($clarities as $clarity) {
+                                    echo '<option value="' . esc_attr($clarity) . '">' . esc_html($clarity) . '</option>';
+                                }
+                                ?>
+                            </select>
+                            <button type="button" class="button-small" onclick="CJS.addNewOption('stone_clarities')"><?php _e('+', 'custom-jewelry-system'); ?></button>
+                        </div>
                     
-                    <div class="cjs-form-actions">
+                        <div class="cjs-form-row">
+                            <label><?php _e('Akmens Pjūvio Klasė', 'custom-jewelry-system'); ?></label>
+                            <select id="stone-cut-grade">
+                                <option value=""><?php _e('Select...', 'custom-jewelry-system'); ?></option>
+                                <?php
+                                $cut_grades = get_option('cjs_stone_cut_grades', []);
+                                foreach ($cut_grades as $grade) {
+                                    echo '<option value="' . esc_attr($grade) . '">' . esc_html($grade) . '</option>';
+                                }
+                                ?>
+                            </select>
+                            <button type="button" class="button-small" onclick="CJS.addNewOption('stone_cut_grades')"><?php _e('+', 'custom-jewelry-system'); ?></button>
+                        </div>
+                    
+                        <div class="cjs-form-row">
+                            <label><?php _e('Kilmės Šalis', 'custom-jewelry-system'); ?></label>
+                            <select id="stone-origin-country">
+                                <option value=""><?php _e('Select...', 'custom-jewelry-system'); ?></option>
+                                <?php
+                                $countries = get_option('cjs_origin_countries', []);
+                                foreach ($countries as $country) {
+                                    echo '<option value="' . esc_attr($country) . '">' . esc_html($country) . '</option>';
+                                }
+                                ?>
+                            </select>
+                            <button type="button" class="button-small" onclick="CJS.addNewOption('origin_countries')"><?php _e('+', 'custom-jewelry-system'); ?></button>
+                        </div>
+                    
+                        <div class="cjs-form-row">
+                            <label><?php _e('Darbo Akmens Sertifikatas', 'custom-jewelry-system'); ?></label>
+                            <input type="text" id="stone-certificate" />
+                        </div>
+                    
+                        <div class="cjs-form-row">
+                            <label><?php _e('Custom Comment', 'custom-jewelry-system'); ?></label>
+                            <textarea id="stone-comment" rows="3"></textarea>
+                        </div>
+                    </div>
+                    <div class="cjs-form-actions cjs-stone-modal-footer">
                         <button type="submit" class="button button-primary">
                             <span id="cjs-stone-submit-text"><?php _e('Add Stone', 'custom-jewelry-system'); ?></span>
                         </button>

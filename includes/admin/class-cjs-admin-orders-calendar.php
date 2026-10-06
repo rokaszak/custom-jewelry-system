@@ -81,7 +81,7 @@ class CJS_Admin_Orders_Calendar {
             $by_order[(int) $row->order_id] = $row;
         }
 
-        $excluded = ['wc-completed', 'wc-cancelled', 'wc-refunded', 'wc-failed'];
+        $excluded = ['wc-completed', 'wc-cancelled', 'wc-refunded', 'wc-failed', 'wc-checkout-draft'];
         $allowed = [];
         foreach (array_keys(wc_get_order_statuses()) as $status) {
             if (!in_array($status, $excluded, true)) {

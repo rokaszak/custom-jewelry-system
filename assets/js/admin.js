@@ -1369,6 +1369,7 @@
         // Modal Management
         closeModal: function() {
             $('.cjs-modal').hide();
+            $('body').removeClass('cjs-modal-open');
         },
 
         // X button: save form state to session, then close
@@ -1511,7 +1512,27 @@
                 
                 console.log('CJS: StoneManager initialized');
             },
-            
+
+            setCastingNotes: function(orderId, fallback) {
+                var text = '';
+                if (orderId) {
+                    var $field = $('textarea[data-field="casting_notes"][data-order-id="' + orderId + '"]');
+                    if (!$field.length) {
+                        $field = $('#cjs_casting_notes');
+                    }
+                    text = $field.length ? $field.val() : (fallback || '');
+                }
+                text = $.trim(text || '');
+                $('#cjs-stone-casting-notes-text').text(text);
+                $('#cjs-stone-casting-notes').prop('hidden', !text);
+            },
+
+            showStoneModal: function() {
+                $('body').addClass('cjs-modal-open');
+                $('#cjs-stone-modal').show();
+                $('#cjs-stone-modal .cjs-stone-modal-body').scrollTop(0);
+            },
+
             openStoneModal: function(e) {
                 e.preventDefault();
                 var orderId = $(this).data('order-id');
@@ -1541,11 +1562,12 @@
                 } else {
                     $('#cjs-stone-product-info').hide();
                 }
-                
+
                 // Restore saved field values if any
                 CJS.restoreModalState('cjs_stone_modal_state', CJS.stoneModalFields);
 
-                $('#cjs-stone-modal').show();
+                CJS.StoneManager.setCastingNotes(orderId);
+                CJS.StoneManager.showStoneModal();
             },
 
             openStoneModalFromList: function(e) {
@@ -1597,7 +1619,8 @@
                 // Restore saved field values if any
                 CJS.restoreModalState('cjs_stone_modal_state', CJS.stoneModalFields);
 
-                $('#cjs-stone-modal').show();
+                CJS.StoneManager.setCastingNotes(orderId);
+                CJS.StoneManager.showStoneModal();
             },
 
             onProductSelect: function() {
@@ -1632,7 +1655,8 @@
                 // Restore saved field values if any
                 CJS.restoreModalState('cjs_stone_modal_state', CJS.stoneModalFields);
 
-                $('#cjs-stone-modal').show();
+                CJS.StoneManager.setCastingNotes('');
+                CJS.StoneManager.showStoneModal();
             },
 
             editStone: function(e) {
@@ -1697,8 +1721,9 @@
                         } else {
                             $('#cjs-stone-product-info').hide();
                         }
-                        
-                        $('#cjs-stone-modal').show();
+
+                        CJS.StoneManager.setCastingNotes(stone.order_id, stone.casting_notes);
+                        CJS.StoneManager.showStoneModal();
                     } else {
                         CJS.showNotice('Error loading stone data', 'error');
                     }

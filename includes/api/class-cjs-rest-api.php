@@ -612,10 +612,16 @@ class CJS_REST_API {
                 }
             }
         }
-        
+
+        $data['casting_notes'] = '';
+        if ($stone->get('order_id')) {
+            $extension = CJS_Order_Extension::get_order_extension($stone->get('order_id'));
+            $data['casting_notes'] = (string) ($extension['casting_notes'] ?? '');
+        }
+
         wp_send_json_success($data);
     }
-    
+
     /**
      * AJAX: Create stone - UPDATED for size units
      */

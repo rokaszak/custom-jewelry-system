@@ -277,6 +277,7 @@ class CJS_Admin_Orders {
             'wc-cancelled',    // Cancelled orders
             'wc-refunded',     // Refunded orders
             'wc-failed',       // Failed orders
+            'wc-checkout-draft',
         ];
         
         // Get order IDs for each excluded status
