@@ -447,11 +447,11 @@ class CJS_Install {
             ],
             'stone_order_statuses' => [
                 'ideta_i_krepseli' => ['label' => 'Įdėta į krepšelį', 'color' => '#bd0000'],
-                'reikia_apmoketi' => ['label' => 'Reikia apmokėti', 'color' => '#dc3545'],
-                'apmoketa' => ['label' => 'Apmokėta', 'color' => '#ffc107'],
-                'uzsakyta' => ['label' => 'Užsakyta', 'color' => '#ffff07'],
-                'siunčiama' => ['label' => 'Siunčiama', 'color' => '#90EE90'],
-                'gauta' => ['label' => 'Gauta', 'color' => '#28a745']
+                'reikia_apmoketi' => ['label' => 'Reikia apmokėti', 'color' => '#b02a37'],
+                'apmoketa' => ['label' => 'Apmokėta', 'color' => '#a35200'],
+                'uzsakyta' => ['label' => 'Užsakyta', 'color' => '#7c6500'],
+                'siunčiama' => ['label' => 'Siunčiama', 'color' => '#0f766e'],
+                'gauta' => ['label' => 'Gauta', 'color' => '#146c2e']
             ],
             'stone_size_units' => [
                 'carats' => 'Carats (ct)',
