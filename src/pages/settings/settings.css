@@ -1,0 +1,127 @@
+.cjs-wpeditor {
+  min-width: 0;
+}
+
+.cjs-wpeditor .wp-editor-wrap {
+  position: relative;
+}
+
+.cjs-wpeditor .wp-editor-tools {
+  display: block;
+  padding: 0;
+  background: transparent;
+}
+
+.cjs-wpeditor .wp-editor-tools::after {
+  display: none;
+}
+
+.cjs-wpeditor .wp-editor-tabs {
+  float: none;
+  display: flex;
+  justify-content: flex-end;
+}
+
+.cjs-wpeditor .wp-switch-editor {
+  float: none;
+  height: auto;
+  margin: 0 0 -1px 4px;
+  padding: 4px 12px;
+  font-size: 12.5px;
+  line-height: 1.4;
+  color: var(--muted);
+  background: var(--surface-secondary);
+  border: 1px solid var(--border);
+  cursor: pointer;
+  transition: color 0.15s ease-out, background-color 0.15s ease-out;
+}
+
+.cjs-wpeditor .wp-switch-editor:hover {
+  color: var(--foreground);
+}
+
+.cjs-wpeditor .tmce-active .switch-tmce,
+.cjs-wpeditor .html-active .switch-html {
+  color: var(--foreground);
+  background: var(--surface-secondary);
+  border-bottom-color: var(--surface-secondary);
+}
+
+.cjs-wpeditor .wp-editor-container {
+  border: 1px solid var(--border);
+  background: var(--surface);
+}
+
+.cjs-wpeditor .wp-editor-area {
+  display: block;
+  width: 100%;
+  padding: 10px 12px;
+  font-family: inherit;
+  font-size: 13px;
+  line-height: 1.55;
+  color: var(--foreground);
+  background: var(--surface);
+  border: 0;
+  outline: 0;
+  resize: vertical;
+}
+
+.cjs-wpeditor .quicktags-toolbar {
+  min-height: 0;
+  padding: 4px;
+  background: var(--surface-secondary);
+  border-bottom: 1px solid var(--border);
+}
+
+.cjs-wpeditor .quicktags-toolbar input.button {
+  display: inline-block;
+  min-height: 26px;
+  margin: 2px;
+  padding: 0 8px;
+  font-size: 12px;
+  line-height: 24px;
+  color: var(--foreground);
+  background: var(--surface);
+  border: 1px solid var(--border);
+  cursor: pointer;
+}
+
+.cjs-wpeditor .quicktags-toolbar input.button:hover {
+  background: var(--surface-tertiary);
+}
+
+.cjs-wpeditor div.mce-toolbar-grp {
+  background: var(--surface-secondary);
+  border-bottom: 1px solid var(--border);
+}
+
+.cjs-wpeditor .mce-btn button {
+  color: var(--foreground);
+}
+
+.cjs-wpeditor .mce-statusbar {
+  border-top: 1px solid var(--border);
+}
+
+.cjs-log-entry + .cjs-log-entry {
+  border-top: 1px solid var(--separator);
+}
+
+.cjs-log-trail {
+  position: relative;
+}
+
+.cjs-log-trail::before {
+  content: '';
+  position: absolute;
+  top: 6px;
+  bottom: 6px;
+  left: 4px;
+  width: 1px;
+  background: var(--separator);
+}
+
+.cjs-log-trail .cjs-dot {
+  position: relative;
+  z-index: 1;
+}

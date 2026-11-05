@@ -53,7 +53,33 @@ class CJS_Calendar_API {
         return $luminance > 0.6 ? '#1f2937' : '#ffffff';
     }
 
+    private static $locks = null;
+
+    private static function order_lock($order_id) {
+        if (!$order_id || !class_exists('CJS_Woo_Sync')) {
+            return null;
+        }
+        if (is_array(self::$locks) && array_key_exists((int) $order_id, self::$locks)) {
+            return self::$locks[(int) $order_id];
+        }
+        return CJS_Woo_Sync::calendar_lock((int) $order_id);
+    }
+
+    private static function order_locked($order_id) {
+        return self::order_lock($order_id) !== null;
+    }
+
+    private static function guard_locked($row) {
+        $reason = $row ? self::order_lock($row->order_id ?? 0) : null;
+        if ($reason !== null) {
+            wp_send_json_error(['message' => CJS_Woo_Sync::calendar_lock_error($reason)->get_error_message()]);
+        }
+    }
+
     private static function event_from_row($row) {
+        if (!$row) {
+            return null;
+        }
         $types = get_option('cjs_interval_types', []);
         $color = $row->color;
         if (empty($color)) {
@@ -65,6 +91,8 @@ class CJS_Calendar_API {
         }
 
         $locked = (int) $row->is_locked === 1;
+        $order_lock = self::order_lock($row->order_id);
+        $order_locked = $order_lock !== null;
         $done = (int) $row->is_done === 1;
 
         $class_names = ['cjs-ev'];
@@ -90,13 +118,16 @@ class CJS_Calendar_API {
             'backgroundColor' => $color,
             'borderColor' => $color,
             'textColor' => self::text_color($color),
-            'editable' => !$locked && !$done,
+            'editable' => !$locked && !$done && !$order_locked,
             'classNames' => $class_names,
             'extendedProps' => [
                 'order_id' => $row->order_id ? (int) $row->order_id : null,
                 'type' => $row->type,
                 'is_locked' => $locked ? 1 : 0,
                 'is_done' => $done ? 1 : 0,
+                'order_locked' => $order_locked,
+                'order_lock' => $order_lock,
+                'order_lock_text' => $order_lock !== null ? CJS_Woo_Sync::calendar_lock_error($order_lock)->get_error_message() : '',
                 'raw_color' => $row->color ? $row->color : '',
                 'hours' => CJS_Calendar_Interval::duration_hours($row),
                 'deadline' => !empty($row->deadline_date) ? $row->deadline_date : '',
@@ -121,9 +152,14 @@ class CJS_Calendar_API {
         $rows = CJS_Calendar_Interval::get_range($start . ' 00:00:00', $end . ' 23:59:59', 1);
 
         $events = [];
+        self::$locks = class_exists('CJS_Woo_Sync') ? CJS_Woo_Sync::calendar_locks(array_map(function ($r) { return (int) ($r->order_id ?? 0); }, $rows)) : [];
         foreach ($rows as $row) {
+            if ($row->order_id && !array_key_exists((int) $row->order_id, self::$locks)) {
+                self::$locks[(int) $row->order_id] = null;
+            }
             $events[] = self::event_from_row($row);
         }
+        self::$locks = null;
 
         wp_send_json_success(['events' => $events]);
     }
@@ -181,6 +217,7 @@ class CJS_Calendar_API {
                 wp_send_json_error(['message' => 'Įrašas nerastas']);
                 return;
             }
+            self::guard_locked($existing);
             if (isset($data['start_datetime']) && !isset($data['end_datetime']) && strtotime($existing->end_datetime) <= strtotime($data['start_datetime'])) {
                 wp_send_json_error(['message' => 'Pabaiga turi būti vėliau už pradžią']);
                 return;
@@ -207,7 +244,7 @@ class CJS_Calendar_API {
         }
 
         $row = CJS_Calendar_Interval::get($id);
-        wp_send_json_success(['event' => self::event_from_row($row)]);
+        wp_send_json_success(['event' => self::event_from_row($row), 'stock_conflicts' => CJS_Statuses::take_hours_conflicts()]);
     }
 
     public static function ajax_interval_delete() {
@@ -219,6 +256,7 @@ class CJS_Calendar_API {
             wp_send_json_error(['message' => 'Įrašas nerastas']);
             return;
         }
+        self::guard_locked(CJS_Calendar_Interval::get($id));
 
         if (!CJS_Calendar_Interval::delete($id)) {
             wp_send_json_error(['message' => 'Nepavyko ištrinti']);
@@ -239,6 +277,7 @@ class CJS_Calendar_API {
             wp_send_json_error(['message' => 'Neteisingi duomenys']);
             return;
         }
+        self::guard_locked(CJS_Calendar_Interval::get($id));
 
         $new_id = CJS_Calendar_Interval::split($id, $at);
         if (!$new_id) {
@@ -260,6 +299,9 @@ class CJS_Calendar_API {
 
         $summary = CJS_Scheduler::recalculate(1, $treat_passed);
 
+        if (is_array($summary)) {
+            $summary['stock_conflicts'] = CJS_Statuses::take_hours_conflicts();
+        }
         wp_send_json_success($summary);
     }
 
