@@ -85,6 +85,7 @@ class CJS_Scheduler {
             CJS_Calendar_Interval::mark_passed_work_done($this->now_mysql, $this->resource_id);
         }
 
+        CJS_Calendar_Interval::remove_locked_open_work($this->resource_id);
         CJS_Calendar_Interval::clear_unconfirmed_work($this->resource_id);
         $this->load_blocking();
 
@@ -216,7 +217,7 @@ class CJS_Scheduler {
 
             $ext = $by_order[$order_id];
 
-            if ($ext->manufacturing_status !== 'Atlieta') {
+            if (CJS_Inv_Flow::status_key((string) $ext->manufacturing_status) !== 'atlieta') {
                 continue;
             }
 
