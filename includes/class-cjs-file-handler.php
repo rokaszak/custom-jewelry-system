@@ -68,15 +68,41 @@ class CJS_File_Handler {
      * Format bytes for display
      */
     public static function format_bytes($bytes) {
+        $bytes = (float) $bytes;
+        $trim = function ($n) {
+            $s = number_format($n, 1, '.', '');
+            return substr($s, -2) === '.0' ? substr($s, 0, -2) : $s;
+        };
         if ($bytes >= 1073741824) {
-            return number_format($bytes / 1073741824, 1) . ' GB';
+            return $trim($bytes / 1073741824) . ' GB';
         } elseif ($bytes >= 1048576) {
-            return number_format($bytes / 1048576, 1) . ' MB';
+            return $trim($bytes / 1048576) . ' MB';
         } elseif ($bytes >= 1024) {
-            return number_format($bytes / 1024, 1) . ' KB';
+            return $trim($bytes / 1024) . ' KB';
         } else {
-            return $bytes . ' bytes';
+            return (int) $bytes . ' bytes';
         }
+    }
+
+    public static function blocked_types() {
+        $list = apply_filters('cjs_dangerous_file_types', [
+            'php', 'phtml', 'php3', 'php4', 'php5', 'php7', 'phps', 'cgi', 'pl', 'asp', 'aspx',
+            'shtml', 'shtm', 'fcgi', 'fpl', 'jsp', 'htm', 'html', 'js', 'swf', 'exe', 'msi',
+            'com', 'scr', 'bat', 'cmd', 'pif', 'vbs', 'vbe', 'jse', 'wsf', 'wsc', 'wsh'
+        ]);
+        return array_values(array_unique(array_map(function ($e) { return strtolower(ltrim((string) $e, '.')); }, is_array($list) ? $list : [])));
+    }
+
+    public static function hint_types() {
+        $list = apply_filters('cjs_upload_hint_types', ['jpg', 'png', 'gif', 'webp', 'heic', 'pdf', 'stl', '3dm', 'obj', 'zip']);
+        $blocked = self::blocked_types();
+        $list = array_map(function ($e) { return strtolower(ltrim((string) $e, '.')); }, is_array($list) ? $list : []);
+        return array_values(array_unique(array_filter($list, function ($e) use ($blocked) { return $e !== '' && !in_array($e, $blocked, true); })));
+    }
+
+    public static function max_upload_size() {
+        $limits = self::get_upload_limits();
+        return (int) apply_filters('cjs_max_file_size', $limits['effective_limit']);
     }
     
     /**
@@ -143,10 +169,8 @@ class CJS_File_Handler {
             return new WP_Error('upload_error', $error_message);
         }
         
-        // Get actual PHP limits and validate file size
-        $limits = self::get_upload_limits();
-        $max_size = apply_filters('cjs_max_file_size', $limits['effective_limit']);
-        
+        $max_size = self::max_upload_size();
+
         if ($file['size'] > $max_size) {
             return new WP_Error('file_too_large', sprintf(
                 'File size (%s) exceeds maximum allowed size (%s)', 
@@ -169,15 +193,8 @@ class CJS_File_Handler {
                 return new WP_Error('invalid_file_type', 'Thumbnail must be an image file (jpg, png, gif, webp)');
             }
         } else {
-            // Main file - allow almost everything, only block potentially dangerous files
-            $dangerous_types = apply_filters('cjs_dangerous_file_types', [
-                'php', 'phtml', 'php3', 'php4', 'php5', 'php7', 'phps', 'cgi', 'pl', 'asp', 'aspx', 
-                'shtml', 'shtm', 'fcgi', 'fpl', 'jsp', 'htm', 'html', 'js', 'swf', 'exe', 'msi',
-                'com', 'scr', 'bat', 'cmd', 'pif', 'vbs', 'vbe', 'jse', 'wsf', 'wsc', 'wsh'
-            ]);
-            
-            if (in_array($file_extension, $dangerous_types)) {
-                return new WP_Error('invalid_file_type', 'File type not allowed for security reasons');
+            if (in_array($file_extension, self::blocked_types(), true)) {
+                return new WP_Error('invalid_file_type', sprintf('.%s files cannot be uploaded.', $file_extension));
             }
         }
         

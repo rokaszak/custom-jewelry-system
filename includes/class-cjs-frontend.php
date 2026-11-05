@@ -84,13 +84,14 @@ class CJS_Frontend {
         
         // Get manufacturing status and convert to client-friendly label
         $raw_manufacturing_status = $data['manufacturing_status'] ?? '';
-        $manufacturing_status = self::get_client_friendly_status($raw_manufacturing_status);
+        $status_key = trim((string) $raw_manufacturing_status) === '' ? '' : (string) CJS_Inv_Flow::status_key((string) $raw_manufacturing_status);
+        $manufacturing_status = self::get_client_friendly_status($status_key);
         
         // Check if order hasn't started yet
-        $is_not_started = ($raw_manufacturing_status === 'Nepradėta');
+        $is_not_started = ($status_key === 'nepradeta');
         
         // Check if order is completed
-        $is_completed = ($raw_manufacturing_status === 'DONE');
+        $is_completed = ($status_key === 'done');
         
         if ($is_completed) {
             $middle_circle_status = 'Vykdoma';
@@ -243,14 +244,14 @@ class CJS_Frontend {
      */
     private static function get_client_friendly_status($raw_status) {
         $status_mapping = [
-            'Užsakyti modelį' => 'Projektuojama',
-            'Atspausdinta' => 'Projektuojama',
-            'Įduota lieti' => 'Gaminama',
-            'Atlieta' => 'Gaminama',
-            'Pagaminta' => 'Prabuojama',
-            'Išvežta prabuoti' => 'Prabuojama',
-            'Užprabuota' => 'Paruošta Pristatymui',
-            'DONE' => 'Išsiųsta'
+            'uzsakyti_modeli' => 'Projektuojama',
+            'atspausdinta' => 'Projektuojama',
+            'iduota_lieti' => 'Gaminama',
+            'atlieta' => 'Gaminama',
+            'pagaminta' => 'Prabuojama',
+            'isvezta_prabuoti' => 'Prabuojama',
+            'uzprabuota' => 'Paruošta Pristatymui',
+            'done' => 'Išsiųsta'
         ];
         
         // Return mapped status or default

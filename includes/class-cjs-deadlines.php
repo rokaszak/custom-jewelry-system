@@ -220,6 +220,26 @@ class CJS_Deadlines {
         return self::contrast_text_color($background_hex);
     }
 
+    public static function term_data($created_ymd, $deliver_by_date) {
+        if (!$created_ymd || empty($deliver_by_date) || !self::is_valid_ymd($deliver_by_date)) {
+            return null;
+        }
+        $term = self::days_between($created_ymd, $deliver_by_date);
+        if ($term === null) {
+            return null;
+        }
+        $ratio = max(0, $term) / self::default_days();
+        $bg = self::coefficient_background($ratio);
+        return [
+            'days' => $term,
+            'standard' => self::default_days(),
+            'ratio' => $ratio,
+            'label' => self::format_coefficient($ratio),
+            'bg' => $bg,
+            'fg' => self::coefficient_text_color($ratio, $bg),
+        ];
+    }
+
     public static function render_term_summary($order, $deliver_by_date) {
         $created = self::order_created_ymd($order);
         if (!$created || empty($deliver_by_date) || !self::is_valid_ymd($deliver_by_date)) {

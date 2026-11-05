@@ -189,63 +189,223 @@ class CJS_Calendar_Interval {
         }
 
         $completed = max(0, round((float) $ext->completed_hours + $delta, 2));
+        $before = ['assigned' => (float) $ext->assigned_hours, 'completed' => (float) $ext->completed_hours];
 
         CJS_Order_Extension::update_order_extension($order_id, ['completed_hours' => $completed]);
 
-        $assigned = (float) $ext->assigned_hours;
-        if ($delta > 0 && $assigned > 0 && $completed >= $assigned
-            && CJS_Order_Extension::can_auto_advance_status($ext->manufacturing_status, 'Pagaminta')) {
-            CJS_Order_Extension::update_order_extension($order_id, ['manufacturing_status' => 'Pagaminta']);
-            CJS_Logger::log('Order auto-marked Pagaminta (visos valandos atliktos)', 'info', 'order', $order_id, ['completed_hours' => $completed, 'assigned_hours' => $assigned]);
+        if ($delta > 0) {
+            try {
+                CJS_Statuses::hours_advance((int) $order_id, $before);
+            } catch (Throwable $e) {
+                error_log('CJS hours auto-advance failed for order ' . $order_id . ': ' . $e->getMessage());
+            }
         }
+    }
+
+    public static function locked_order_ids($resource_id = 1, $scope = '') {
+        global $wpdb;
+        if (!class_exists('CJS_Inv_Demands') || !class_exists('CJS_Woo_Sync')) {
+            return [];
+        }
+        $ids = $wpdb->get_col($wpdb->prepare("SELECT DISTINCT order_id FROM " . self::table() . " WHERE resource_id = %d AND order_id IS NOT NULL", $resource_id) . ($scope !== '' ? ' AND (' . $scope . ')' : '')) ?: [];
+        return self::locked_among($ids);
+    }
+
+    private static function locked_among(array $ids) {
+        $ids = array_values(array_unique(array_filter(array_map('intval', $ids))));
+        if (!$ids || !class_exists('CJS_Woo_Sync')) {
+            return [];
+        }
+        $out = [];
+        foreach (array_chunk($ids, 500) as $chunk) {
+            foreach (array_keys(CJS_Woo_Sync::calendar_locks($chunk)) as $id) {
+                $out[] = (int) $id;
+            }
+        }
+        return $out;
+    }
+
+    private static function skip_locked(array $rows, array $locked) {
+        return array_values(array_filter($rows, function ($row) use ($locked) {
+            return !in_array((int) $row->order_id, $locked, true);
+        }));
+    }
+
+    private static function lock_now($order_id, array &$locked) {
+        $order_id = (int) $order_id;
+        if (in_array($order_id, $locked, true)) {
+            return true;
+        }
+        if (class_exists('CJS_Woo_Sync') && CJS_Woo_Sync::calendar_lock($order_id) !== null) {
+            $locked[] = $order_id;
+            return true;
+        }
+        return false;
+    }
+
+    private static function still_open($row) {
+        $fresh = self::get((int) $row->id);
+        return $fresh && (int) $fresh->is_done === 0 ? $fresh : null;
     }
 
     public static function mark_passed_work_done($now_mysql, $resource_id = 1) {
         global $wpdb;
 
-        $spanning = $wpdb->get_results($wpdb->prepare(
-            "SELECT * FROM " . self::table() . " WHERE resource_id = %d AND type = 'work' AND is_done = 0 AND order_id IS NOT NULL AND start_datetime < %s AND end_datetime > %s",
+        $locked = self::locked_order_ids($resource_id, $wpdb->prepare("type = 'work' AND is_done = 0 AND start_datetime < %s", $now_mysql));
+        $done = 0;
+
+        $spanning = self::skip_locked($wpdb->get_results($wpdb->prepare(
+            "SELECT * FROM " . self::table() . " WHERE resource_id = %d AND type = 'work' AND is_done = 0 AND order_id IS NOT NULL AND start_datetime < %s AND end_datetime > %s ORDER BY start_datetime ASC, id ASC",
             $resource_id,
             $now_mysql,
             $now_mysql
-        ));
+        )) ?: [], $locked);
 
         foreach ($spanning as $row) {
+            if (self::lock_now($row->order_id, $locked)) {
+                continue;
+            }
+            $row = self::still_open($row);
+            if (!$row || strtotime($row->start_datetime) >= strtotime($now_mysql) || strtotime($row->end_datetime) <= strtotime($now_mysql)) {
+                continue;
+            }
             if (self::split($row->id, $now_mysql)) {
                 $wpdb->update(self::table(), ['is_done' => 1, 'updated_at' => current_time('mysql')], ['id' => $row->id]);
                 $hours = round((strtotime($now_mysql) - strtotime($row->start_datetime)) / 3600, 2);
                 self::adjust_completed_hours($row->order_id, $hours);
+                $done++;
+                self::lock_now($row->order_id, $locked);
             }
         }
 
-        $rows = $wpdb->get_results($wpdb->prepare(
-            "SELECT * FROM " . self::table() . " WHERE resource_id = %d AND type = 'work' AND is_done = 0 AND end_datetime <= %s AND order_id IS NOT NULL",
+        $rows = self::skip_locked($wpdb->get_results($wpdb->prepare(
+            "SELECT * FROM " . self::table() . " WHERE resource_id = %d AND type = 'work' AND is_done = 0 AND end_datetime <= %s AND order_id IS NOT NULL ORDER BY start_datetime ASC, id ASC",
             $resource_id,
             $now_mysql
-        ));
+        )) ?: [], $locked);
 
         foreach ($rows as $row) {
+            if (self::lock_now($row->order_id, $locked)) {
+                continue;
+            }
+            $row = self::still_open($row);
+            if (!$row) {
+                continue;
+            }
             $wpdb->update(self::table(), ['is_done' => 1, 'updated_at' => current_time('mysql')], ['id' => $row->id]);
             self::adjust_completed_hours($row->order_id, self::duration_hours($row));
+            $done++;
+            self::lock_now($row->order_id, $locked);
         }
 
-        return count($rows) + count($spanning);
+        return $done;
+    }
+
+    public static function remove_open_entries($order_id) {
+        global $wpdb;
+        $order_id = (int) $order_id;
+        if ($order_id <= 0) {
+            return 0;
+        }
+        $n = $wpdb->query($wpdb->prepare("DELETE FROM " . self::table() . " WHERE order_id = %d AND is_done = 0", $order_id));
+        if ($n === false) {
+            error_log('CJS calendar entries of order ' . $order_id . ' could not be removed: ' . $wpdb->last_error);
+            return 0;
+        }
+        if ($n > 0 && class_exists('CJS_Logger')) {
+            CJS_Logger::log('Calendar entries that were not done removed', 'info', 'order', $order_id, ['count' => (int) $n]);
+        }
+        return (int) $n;
+    }
+
+    public static function remove_locked_open_work($resource_id = 1) {
+        global $wpdb;
+        $t = self::table();
+        $locked = self::locked_order_ids($resource_id, "order_id IN (SELECT o.order_id FROM (SELECT DISTINCT order_id FROM $t WHERE is_done = 0 AND order_id IS NOT NULL) o)");
+        $n = 0;
+        foreach (array_chunk($locked, 500) as $chunk) {
+            $in = implode(',', array_map('intval', $chunk));
+            $counts = $wpdb->get_results("SELECT order_id, COUNT(*) AS n FROM $t WHERE is_done = 0 AND order_id IN ($in) GROUP BY order_id", ARRAY_A) ?: [];
+            if (!$counts) {
+                continue;
+            }
+            $deleted = $wpdb->query("DELETE FROM $t WHERE is_done = 0 AND order_id IN ($in)");
+            if ($deleted === false) {
+                error_log('CJS calendar entries of locked orders could not be removed: ' . $wpdb->last_error);
+                continue;
+            }
+            $n += (int) $deleted;
+            if (class_exists('CJS_Logger')) {
+                foreach ($counts as $c) {
+                    if ((int) $c['n'] > 0) {
+                        CJS_Logger::log('Calendar entries that were not done removed', 'info', 'order', (int) $c['order_id'], ['count' => (int) $c['n']]);
+                    }
+                }
+            }
+        }
+        return $n;
     }
 
     public static function clear_unconfirmed_work($resource_id = 1) {
         global $wpdb;
+        $t = self::table();
+        $where = $wpdb->prepare("resource_id = %d AND type = 'work' AND (is_done = 1 OR is_locked = 0)", $resource_id);
+        $wpdb->query("DELETE FROM $t WHERE $where AND order_id IS NULL");
+        $unlocked = self::unlocked_work_orders($resource_id);
+        if ($unlocked === null) {
+            $ids = array_map('intval', $wpdb->get_col("SELECT DISTINCT order_id FROM $t WHERE $where AND order_id IS NOT NULL") ?: []);
+            $unlocked = $ids ? array_values(array_diff($ids, self::locked_among($ids))) : [];
+        }
+        foreach (array_chunk($unlocked, 500) as $chunk) {
+            $wpdb->query("DELETE FROM $t WHERE $where AND order_id IN (" . implode(',', array_map('intval', $chunk)) . ')');
+        }
+    }
 
-        $wpdb->query($wpdb->prepare(
-            "DELETE FROM " . self::table() . " WHERE resource_id = %d AND type = 'work' AND (is_done = 1 OR is_locked = 0)",
-            $resource_id
-        ));
+    private static function unlocked_work_orders($resource_id) {
+        global $wpdb;
+        if (!class_exists('CJS_Woo_Sync') || !class_exists('CJS_Inv_Flow') || !class_exists('CJS_Orders')) {
+            return null;
+        }
+        try {
+            $ext = $wpdb->prefix . 'cjs_order_extensions';
+            $min = CJS_Inv_Flow::rank('pagaminta');
+            $made = [];
+            foreach ($wpdb->get_col("SELECT DISTINCT manufacturing_status FROM $ext WHERE manufacturing_status IS NOT NULL") ?: [] as $value) {
+                $key = CJS_Inv_Flow::status_key((string) $value) ?? 'nepradeta';
+                if (CJS_Inv_Flow::rank($key) >= $min) {
+                    $made[] = $wpdb->prepare('%s', (string) $value);
+                }
+            }
+            $joins = "LEFT JOIN $ext e ON e.order_id = t.order_id";
+            $status = "COALESCE(p.post_status, '')";
+            if (CJS_Orders::hpos()) {
+                $joins .= " LEFT JOIN {$wpdb->prefix}wc_orders o ON o.id = t.order_id";
+                $status = "COALESCE(o.status, p.post_status, '')";
+            }
+            $joins .= " LEFT JOIN {$wpdb->posts} p ON p.ID = t.order_id AND p.post_type = 'shop_order'";
+            $made_sql = $made ? "COALESCE(e.manufacturing_status, '') IN (" . implode(',', $made) . ')' : '0 = 1';
+            $sql = $wpdb->prepare("SELECT DISTINCT t.order_id FROM " . self::table() . " t $joins WHERE t.resource_id = %d AND t.type = 'work' AND (t.is_done = 1 OR t.is_locked = 0) AND t.order_id IS NOT NULL AND $status NOT IN ('wc-completed', 'completed') AND NOT (e.order_id IS NOT NULL AND $made_sql)", $resource_id);
+            $suppress = $wpdb->suppress_errors(true);
+            $ids = $wpdb->get_col($sql);
+            $failed = $wpdb->last_error !== '';
+            $wpdb->suppress_errors($suppress);
+            if ($failed || !is_array($ids)) {
+                return null;
+            }
+            return array_values(array_unique(array_filter(array_map('intval', $ids))));
+        } catch (Throwable $e) {
+            return null;
+        }
     }
 
     public static function get_blocking($now_mysql, $resource_id = 1) {
         global $wpdb;
 
+        $locked = self::locked_order_ids($resource_id, $wpdb->prepare("end_datetime > %s AND is_done = 0 AND is_locked = 0 AND type = 'work'", $now_mysql));
+        $also = $locked ? ' OR order_id IN (' . implode(',', array_map('intval', $locked)) . ')' : '';
+
         return $wpdb->get_results($wpdb->prepare(
-            "SELECT * FROM " . self::table() . " WHERE resource_id = %d AND end_datetime > %s AND (is_locked = 1 OR is_done = 1 OR type <> 'work') ORDER BY start_datetime ASC",
+            "SELECT * FROM " . self::table() . " WHERE resource_id = %d AND end_datetime > %s AND (is_locked = 1 OR is_done = 1 OR type <> 'work'" . $also . ") ORDER BY start_datetime ASC",
             $resource_id,
             $now_mysql
         ));
