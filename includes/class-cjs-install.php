@@ -58,6 +58,21 @@ class CJS_Install {
         self::upgrade_statuses();
     }
 
+    public static function maybe_clean_comments() {
+        if ((int) get_option('cjs_comment_cleanup', 0) >= 3 || !current_user_can('manage_woocommerce') || !method_exists('CJS_Orders', 'clear_autofilled_comments')) {
+            return;
+        }
+        update_option('cjs_comment_cleanup', 3, true);
+        delete_option('cjs_comment_cleanup_done');
+        try {
+            $result = CJS_Orders::clear_autofilled_comments();
+        } catch (Throwable $e) {
+            $result = ['error' => $e->getMessage()];
+            error_log('CJS comment cleanup failed: ' . $e->getMessage());
+        }
+        update_option('cjs_comment_cleanup_result', wp_json_encode($result + ['at' => current_time('mysql')]), false);
+    }
+
     public static function upgrade_statuses() {
         try {
             CJS_Statuses::maybe_upgrade();

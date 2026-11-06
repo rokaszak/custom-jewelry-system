@@ -3,7 +3,7 @@
  * Plugin Name: Custom Jewelry System
  * Plugin URI: https://Proven.lt/
  * Description: Order production, inventory and stock management for jewelers
- * Version: 2.0.0
+ * Version: 2.0.1
  * Author: Rokas Zakarauskas
  * Text Domain: custom-jewelry-system
  * Domain Path: /languages
@@ -17,7 +17,7 @@ if (!defined('ABSPATH')) {
     exit;
 }
 
-define('CJS_VERSION', '2.0.0');
+define('CJS_VERSION', '2.0.1');
 define('CJS_PLUGIN_FILE', __FILE__);
 define('CJS_PLUGIN_DIR', plugin_dir_path(__FILE__));
 define('CJS_PLUGIN_URL', plugin_dir_url(__FILE__));
@@ -110,5 +110,6 @@ add_action('init', function () {
 add_action('admin_init', function () {
     if (class_exists('WooCommerce')) {
         CJS_Install::maybe_migrate();
+        CJS_Install::maybe_clean_comments();
     }
 }, 99);

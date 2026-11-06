@@ -43,7 +43,8 @@ export function ProductOptions({ items, order }) {
   return (
     <Section title="Products & options">
       {items?.length ? (
-        <ul className="flex flex-col gap-2">
+        <div className="@container">
+        <ul className="grid grid-cols-1 items-start gap-2 @xl:grid-cols-2">
           {items.map((it) => (
             <li key={it.id} className="bg-surface p-3 ring-1 ring-separator">
               <div className="flex items-center gap-2.5">
@@ -66,6 +67,7 @@ export function ProductOptions({ items, order }) {
             </li>
           ))}
         </ul>
+        </div>
       ) : (
         <div className="text-[12.5px] text-muted">No products.</div>
       )}
@@ -94,7 +96,7 @@ export default function OrderPanel({ orderId, embedded, onChanged }) {
     <div className="@container">
       <div className={cx('grid items-start gap-4 @4xl:grid-cols-[minmax(0,1.35fr)_minmax(0,1fr)]', embedded ? 'p-0' : 'p-3 sm:p-4')}>
         <Section title="Inventorius" className="min-w-0">
-          <InventoryLines locked={!!o.locked} orderId={o.id} orderNumber={o.number} lineItems={o.line_items} demands={o.demands} warnings={o.warnings} history={o.returnable_history} onChanged={refresh} contextText={o.casting_notes || ''} />
+          <InventoryLines locked={!!o.locked} orderId={o.id} orderNumber={o.number} lineItems={o.line_items} demands={o.demands} warnings={o.warnings} history={o.returnable_history} onChanged={refresh} comment={o.casting_notes || ''} />
         </Section>
         <div className="flex min-w-0 flex-col gap-4">
           {!embedded && <ProductOptions items={o.line_items} order={o} />}

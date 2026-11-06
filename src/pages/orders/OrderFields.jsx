@@ -1,28 +1,11 @@
-import { Fragment, useEffect, useId, useRef, useState } from 'react'
-import { Tooltip, Button, ProgressBar } from '@heroui/react'
-import { get } from '../../lib/api'
-import { notifyError } from '../../lib/hooks'
+import { Fragment, useEffect, useRef, useState } from 'react'
+import { Button, ProgressBar } from '@heroui/react'
 import { daysLabel, daysTone, hours } from '../../lib/format'
 import { Check, DateInput, NumberInput, SelectField, Tone, cx } from '../../components/ui'
 import InventoryBadge from '../../components/InventoryBadge'
 import { Plus } from '@gravity-ui/icons'
 import { DATE_FIELDS, useOrderActions } from './orderActions'
 import { useStatuses } from '../../components/StockModal'
-
-export function SparkleIcon({ className }) {
-  const id = useId().replace(/:/g, '')
-  return (
-    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 30 30" className={className} aria-hidden="true">
-      <defs>
-        <linearGradient id={`cjs-sparkle-${id}`} x1="0%" y1="0%" x2="100%" y2="100%">
-          <stop offset="0%" stopColor="#6DD5FA" />
-          <stop offset="100%" stopColor="#F781C6" />
-        </linearGradient>
-      </defs>
-      <path fill={`url(#cjs-sparkle-${id})`} d="M14.217 19.707l-1.112 2.547c-.427.979-1.782.979-2.21 0l-1.112-2.547c-.99-2.267-2.771-4.071-4.993-5.057L1.73 13.292c-.973-.432-.973-1.848 0-2.28l2.965-1.316C6.974 8.684 8.787 6.813 9.76 4.47l1.126-2.714c.418-1.007 1.81-1.007 2.228 0L14.24 4.47c.973 2.344 2.786 4.215 5.065 5.226l2.965 1.316c.973.432.973 1.848 0 2.28l-3.061 1.359C16.988 15.637 15.206 17.441 14.217 19.707zM24.481 27.796l-.339.777c-.248.569-1.036.569-1.284 0l-.339-.777c-.604-1.385-1.693-2.488-3.051-3.092l-1.044-.464c-.565-.251-.565-1.072 0-1.323l.986-.438c1.393-.619 2.501-1.763 3.095-3.195l.348-.84c.243-.585 1.052-.585 1.294 0l.348.84c.594 1.432 1.702 2.576 3.095 3.195l.986.438c.565.251.565 1.072 0 1.323l-1.044.464C26.174 25.308 25.085 26.411 24.481 27.796z" />
-    </svg>
-  )
-}
 
 export function TermBadge({ term }) {
   if (!term) return null
@@ -221,150 +204,93 @@ export function TypeSelect({ order, types }) {
 }
 
 
-function reducedMotion() {
-  try {
-    return window.matchMedia('(prefers-reduced-motion: reduce)').matches
-  } catch {
-    return false
-  }
-}
-
-export function CastingNotes({ order, rows = 2, fill = false }) {
+export function OrderComment({ order, rows = 2, fill = false }) {
   const { saveField } = useOrderActions()
   const [value, setValue] = useState(order.casting_notes || '')
-  const [anim, setAnim] = useState(null)
-  const [loading, setLoading] = useState(false)
   const saveTimer = useRef(null)
-  const timers = useRef([])
   const ref = useRef(null)
-  const wrapRef = useRef(null)
 
   useEffect(() => {
-    if (document.activeElement !== ref.current && !anim) setValue(order.casting_notes || '')
+    if (document.activeElement !== ref.current) setValue(order.casting_notes || '')
   }, [order.casting_notes])
 
-  useEffect(() => () => {
-    clearTimeout(saveTimer.current)
-    timers.current.forEach(clearTimeout)
-  }, [])
-
-  const shown = anim ? anim.text.slice(0, anim.count) : value
-
-  const later = (fn, ms) => {
-    const t = setTimeout(fn, ms)
-    timers.current.push(t)
-  }
+  useEffect(() => () => clearTimeout(saveTimer.current), [])
 
   const persist = (v) => {
     clearTimeout(saveTimer.current)
     saveField(order.id, 'casting_notes', v).catch(() => {})
   }
 
-  const queueSave = (v) => {
-    clearTimeout(saveTimer.current)
-    saveTimer.current = setTimeout(() => saveField(order.id, 'casting_notes', v).catch(() => {}), 1800)
-  }
-
-  const typeText = (text) => {
-    timers.current.forEach(clearTimeout)
-    timers.current = []
-    clearTimeout(saveTimer.current)
-    if (reducedMotion()) {
-      setValue(text)
-      persist(text)
-      return
-    }
-    ref.current?.blur()
-    setAnim({ text, count: 0, phase: 'typing' })
-    let i = 0
-    const step = () => {
-      if (i < text.length) {
-        const ch = text[i]
-        i += 1
-        setAnim((a) => (a ? { ...a, count: i } : a))
-        let delay = 10 + Math.random() * 20 - 10
-        if ([',', ':', '.', ';'].includes(ch)) delay *= 1.3
-        if (ch === ' ') delay *= 0.8
-        if (Math.random() < 0.1) delay += Math.random() * 30
-        later(step, Math.max(10, delay))
-        return
-      }
-      later(() => {
-        setValue(text)
-        persist(text)
-        setAnim((a) => (a ? { ...a, phase: 'done' } : a))
-        later(() => setAnim(null), 800)
-      }, 200)
-    }
-    later(step, 300)
-  }
-
-  const autofill = async () => {
-    setLoading(true)
-    try {
-      const res = await get(`orders/${order.id}/variant-text`)
-      const text = res.text || ''
-      if (!text) {
-        notifyError(new Error('No product options found for this order.'))
-        return
-      }
-      typeText(text)
-    } catch (e) {
-      notifyError(e)
-    } finally {
-      setLoading(false)
-    }
-  }
-
-  const busy = loading || !!anim
   const field = (
-    <div
-      ref={wrapRef}
-      data-no-expand
-      className={cx('cjs-liej', fill && 'is-fill', anim && 'cjs-ai-typing', anim?.phase === 'typing' && 'cjs-generating-shimmer', anim?.phase === 'done' && 'cjs-completion-glow')}
-    >
+    <div data-no-expand className={cx('cjs-liej', fill && 'is-fill')}>
       <div className="cjs-liej-text">
-        <div className="cjs-liej-mirror" aria-hidden="true">{(shown || 'Liejimas') + ' '}</div>
+        <div className="cjs-liej-mirror" aria-hidden="true">{(value || 'Komentaras') + ' '}</div>
         <textarea
           ref={ref}
           rows={rows}
-          aria-label="Liejimas"
-          placeholder="Liejimas"
-          className={cx(anim && 'cjs-hidden-text')}
-          value={shown}
-          readOnly={!!anim}
+          aria-label="Komentaras"
+          placeholder="Komentaras"
+          value={value}
           onChange={(e) => {
-            setValue(e.target.value)
-            queueSave(e.target.value)
+            const v = e.target.value
+            setValue(v)
+            clearTimeout(saveTimer.current)
+            saveTimer.current = setTimeout(() => saveField(order.id, 'casting_notes', v).catch(() => {}), 1800)
           }}
           onBlur={() => {
-            if (!anim && value !== (order.casting_notes || '')) persist(value)
+            if (value !== (order.casting_notes || '')) persist(value)
           }}
         />
-        {anim && (
-          <div className="cjs-liej-overlay" aria-hidden="true">
-            {Array.from(anim.text.slice(0, anim.count)).map((ch, i) => (
-              <span key={i} className="cjs-char">{ch}</span>
-            ))}
-          </div>
-        )}
-      </div>
-      <div className="cjs-liej-btn">
-        <Tooltip delay={300}>
-          <Button isIconOnly size="sm" variant="ghost" aria-label="Fill from product options" className="size-7 min-w-7" isDisabled={busy} onPress={autofill}>
-            <SparkleIcon className={cx('size-[18px]', loading && 'cjs-liej-spin')} />
-          </Button>
-          <Tooltip.Content>
-            <p>Fill from product options</p>
-          </Tooltip.Content>
-        </Tooltip>
       </div>
     </div>
   )
   if (!fill) return field
   return (
     <div className="cjs-liej-cell">
-      <div className="cjs-liej-sizer" aria-hidden="true">{(shown || 'Liejimas') + ' '}</div>
+      <div className="cjs-liej-sizer" aria-hidden="true">{(value || 'Komentaras') + ' '}</div>
+      {field}
+    </div>
+  )
+}
+
+export function ProductsCompact({ items }) {
+  if (!items?.length) return null
+  return (
+    <div className="flex min-w-0 flex-col gap-2.5 text-[12px] leading-snug">
+      {items.map((it) => (
+        <div key={it.id} className="min-w-0">
+          <div className="line-clamp-2 break-words font-semibold text-foreground" title={it.name}>{it.name}</div>
+          {it.qty > 1 && <div className="text-muted">× {it.qty}</div>}
+          {it.meta?.length > 0 && (
+            <div className="mt-1 flex flex-col gap-0.5">
+              {it.meta.map((m, i) => (
+                <div key={i} className="break-words text-foreground">
+                  <span className="inline-block min-w-[84px] whitespace-nowrap pr-2 text-muted">{m.key}</span>
+                  {m.value}
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+      ))}
+    </div>
+  )
+}
+
+export function CustomerNote({ order, rows = 2, fill = false }) {
+  const text = (order.customer_note || '').trim()
+  const field = (
+    <div data-no-expand className={cx('cjs-liej is-locked', fill && 'is-fill')} title="Kliento pastaba iš WooCommerce, keisti negalima">
+      <div className="cjs-liej-text">
+        <div className="cjs-liej-mirror" aria-hidden="true">{text + ' '}</div>
+        <textarea rows={rows} value={text} readOnly aria-readonly="true" aria-label="Kliento pastaba" tabIndex={-1} />
+      </div>
+    </div>
+  )
+  if (!fill) return field
+  return (
+    <div className="cjs-liej-cell">
+      <div className="cjs-liej-sizer" aria-hidden="true">{text + ' '}</div>
       {field}
     </div>
   )

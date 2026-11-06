@@ -125,7 +125,7 @@ function PiecesField({ itemId, lineId, count, onCount, value, onChange, onInit, 
   )
 }
 
-function AddLineDialog({ orderId, orderItemId, productName, contextText, isOpen, onClose, onDone }) {
+function AddLineDialog({ orderId, orderItemId, productName, context, isOpen, onClose, onDone }) {
   const { categoryById } = useCatalog()
   const draft = useDraft(`line:new:${orderId}:${orderItemId || 0}`)
   const [initial] = useState(() => draft.read())
@@ -181,10 +181,10 @@ function AddLineDialog({ orderId, orderItemId, productName, contextText, isOpen,
       }
     >
       <div className="flex flex-col gap-3">
-        <ContextNote text={contextText} />
+        <ContextNote context={context} />
         <DraftNote show={!!initial && !dirty} />
         <Field label="Item" required>
-          <ItemPicker value={item} onChange={(v) => { setDirty(true); setItem(v) }} autoFocus contextText={contextText || undefined} metalRows flip={false} />
+          <ItemPicker value={item} onChange={(v) => { setDirty(true); setItem(v) }} autoFocus context={context} metalRows flip={false} />
         </Field>
         {pieceItem ? (
           <>
@@ -220,7 +220,7 @@ function AddLineDialog({ orderId, orderItemId, productName, contextText, isOpen,
   )
 }
 
-function EditLineDialog({ line, contextText, isOpen, onClose, onDone }) {
+function EditLineDialog({ line, context, isOpen, onClose, onDone }) {
   const { categoryById } = useCatalog()
   const fineness = defaultFineness(line, categoryById[line.category_id])
   const draft = useDraft(`line:${line.id}`)
@@ -278,10 +278,10 @@ function EditLineDialog({ line, contextText, isOpen, onClose, onDone }) {
       }
     >
       <div className="flex flex-col gap-3">
-        <ContextNote text={contextText} />
+        <ContextNote context={context} />
         <DraftNote show={!!initial && !dirty} />
         <Field label="Item" required hint={changedItem ? 'Stock of the old item goes back on the shelf and the new item is taken instead.' : undefined}>
-          <ItemPicker value={item} onChange={(v) => { setDirty(true); setItem(v) }} contextText={contextText || undefined} flip={false} />
+          <ItemPicker value={item} onChange={(v) => { setDirty(true); setItem(v) }} context={context} flip={false} />
         </Field>
         <Field label={`Quantity (${line.unit}${fineness ? ` at ${qty(fineness)}` : ''})`} required>
           <NumberInput value={amount} onChange={(v) => { setDirty(true); setAmount(v) }} min="0" step={pieceMode ? '1' : 'any'} className="max-w-45" />
@@ -395,7 +395,7 @@ export function Breakdown({ rows, categoryId, onOpenItem, onOpenStockOrder, onOr
   )
 }
 
-function LineRow({ line, demands, orderNumber, contextText, onChanged, onOpenItem, onOpenStockOrder }) {
+function LineRow({ line, demands, orderNumber, context, onChanged, onOpenItem, onOpenStockOrder }) {
   const { categoryById } = useCatalog()
   const fineness = defaultFineness(line, categoryById[line.category_id])
   const confirm = useConfirm()
@@ -614,7 +614,7 @@ function LineRow({ line, demands, orderNumber, contextText, onChanged, onOpenIte
       </Dropdown>
       </NoBubble>
       {dialog === 'comment' && <CommentDialog title={line.note ? 'Edit comment' : 'Add comment'} value={line.note || ''} onClose={() => setDialog(null)} onSave={async (text) => { await saveDemandNote(line.id, text); onChanged() }} />}
-      {dialog === 'edit' && <EditLineDialog line={line} contextText={contextText} isOpen onClose={() => setDialog(null)} onDone={onChanged} />}
+      {dialog === 'edit' && <EditLineDialog line={line} context={context} isOpen onClose={() => setDialog(null)} onDone={onChanged} />}
       {dialog === 'assign' && <AssignDialog line={line} isOpen onClose={() => setDialog(null)} onDone={onChanged} />}
       {dialog === 'swap' && <AssignDialog line={line} isOpen onClose={() => setDialog(null)} onDone={onChanged} replace={pieces.find((a) => a.state === 'out' || a.state === 'reserved')} />}
       {dialog === 'order' && <StockOrderDialog lines={[line]} order={{ id: line.order_id, number: orderNumber || line.order_id }} draftKey={`so:new:line:${line.id}`} isOpen onClose={() => setDialog(null)} onDone={onChanged} />}
@@ -678,7 +678,7 @@ function attentionText(d) {
   return 'Ordered but not received yet'
 }
 
-export default function InventoryLines({ orderId, orderNumber, lineItems = [], demands = [], warnings = [], history = [], onChanged, compact, contextText, locked }) {
+export default function InventoryLines({ orderId, orderNumber, lineItems = [], demands = [], warnings = [], history = [], onChanged, compact, comment, locked }) {
   const [adding, setAdding] = useState(null)
   const [itemId, setItemId] = useState(null)
   const [soId, setSoId] = useState(null)
@@ -694,6 +694,7 @@ export default function InventoryLines({ orderId, orderNumber, lineItems = [], d
   const orphan = demands.filter((d) => d.order_item_id && !known.has(d.order_item_id))
   const orderLevel = demands.filter((d) => !d.order_item_id)
   groups.push({ key: 'order', orderItemId: null, title: 'Whole order', subtitle: 'Packaging, envelopes, sizing kits', lines: [...orderLevel, ...orphan] })
+  const contextFor = (orderItemId) => ({ meta: (orderItemId && lineItems.find((li) => li.id === orderItemId)?.meta) || [], comment: comment || '' })
   return (
     <div className="flex flex-col">
       <Expand open={attention.length > 0}>
@@ -733,7 +734,7 @@ export default function InventoryLines({ orderId, orderNumber, lineItems = [], d
           </div>
           {g.lines.length > 0 ? (
             <ul className="mt-1 divide-y divide-separator">
-              {g.lines.map((line) => <LineRow key={line.id} line={line} demands={demands} orderNumber={orderNumber} contextText={contextText} onChanged={changed} onOpenItem={setItemId} onOpenStockOrder={setSoId} />)}
+              {g.lines.map((line) => <LineRow key={line.id} line={line} demands={demands} orderNumber={orderNumber} context={contextFor(line.order_item_id)} onChanged={changed} onOpenItem={setItemId} onOpenStockOrder={setSoId} />)}
             </ul>
           ) : (
             <div className="mt-1 text-[12.5px] text-muted">No inventory lines.</div>
@@ -742,7 +743,7 @@ export default function InventoryLines({ orderId, orderNumber, lineItems = [], d
         </div>
       ))}
       </div>
-      {adding && <AddLineDialog orderId={orderId} orderItemId={adding.orderItemId} productName={adding.orderItemId ? adding.title : null} contextText={contextText} isOpen onClose={() => setAdding(null)} onDone={changed} />}
+      {adding && <AddLineDialog orderId={orderId} orderItemId={adding.orderItemId} productName={adding.orderItemId ? adding.title : null} context={contextFor(adding.orderItemId)} isOpen onClose={() => setAdding(null)} onDone={changed} />}
       {orderLines && orderLines.length > 0 && (
         <StockOrderDialog
           lines={orderLines}

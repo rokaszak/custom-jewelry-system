@@ -2,7 +2,7 @@ import { Fragment, Suspense, lazy, useCallback, useEffect, useMemo, useRef, useS
 import { useQuery, useQueryClient, keepPreviousData } from '@tanstack/react-query'
 import { Button } from '@heroui/react'
 import { toast } from '../../lib/toast'
-import { Magnifier, Funnel, FunnelXmark, ArrowUpRightFromSquare, ChevronDown, ChevronUp, ArrowsRotateRight, Paperclip, CircleCheck } from '@gravity-ui/icons'
+import { Magnifier, Funnel, FunnelXmark, ArrowUpRightFromSquare, ChevronDown, ChevronUp, ArrowsRotateRight, Paperclip, CircleCheck, ChevronsExpandVertical, ChevronsCollapseVertical } from '@gravity-ui/icons'
 import { get, post } from '../../lib/api'
 import { useBootstrap, useDebounced, setUrlParams, useElementWidth, notifyError } from '../../lib/hooks'
 import { hoursLt, ordersWordLt } from '../../lib/format'
@@ -11,7 +11,7 @@ import { navigate } from '../../lib/nav'
 import { Page, TextInput, MultiFilter, SelectField, DateInput, Field, Empty, SkBox, SkChip, SkeletonRows, SkLine, skw, Pager, Stat, IconButton, HexChip, Check, Expand, useSelection, SelectAll, BulkBar, useConfirm, fromInside, cx } from '../../components/ui'
 import { OrderActionsProvider, useOrderActions, patchOrderCaches, LOCK_TEXT } from './orderActions'
 import { useStockFlow, previewTransition } from '../../components/StockModal'
-import { DatesEditor, HoursEditor, FlagsEditor, StatusSelect, TypeSelect, CastingNotes, InventoryList } from './OrderFields'
+import { DatesEditor, HoursEditor, FlagsEditor, StatusSelect, TypeSelect, OrderComment, ProductsCompact, CustomerNote, InventoryList } from './OrderFields'
 import OrderPanel from './OrderPanel'
 import StockOrderDialog from './StockOrderDialog'
 
@@ -60,14 +60,16 @@ const KIT_FILTER = [
   { value: 'returned', label: 'Returned' },
 ]
 
-const W = { sel: 34, terms: 268, work: 146, status: 160, actions: 48, order: 128, inv: 132, liej: 132 }
-const TABLE_MIN = W.sel + W.terms + W.work + W.status + W.actions + W.order + W.inv + W.liej
+const W = { sel: 34, terms: 268, work: 146, status: 160, actions: 48, order: 128, inv: 132, comment: 130, prod: 180, note: 120 }
+const TABLE_MIN = W.sel + W.terms + W.work + W.status + W.actions + W.order + W.inv + W.comment + W.prod + W.note
 
 function columnWidths(width) {
   const extra = Math.max(0, (width || TABLE_MIN) - TABLE_MIN)
   return {
-    order: Math.round(W.order + Math.min(92, extra * 0.15)),
-    inv: Math.round(W.inv + Math.min(268, extra * 0.4)),
+    order: Math.round(W.order + Math.min(92, extra * 0.12)),
+    inv: Math.round(W.inv + Math.min(268, extra * 0.3)),
+    prod: Math.round(W.prod + Math.min(140, extra * 0.15)),
+    note: Math.round(W.note + Math.min(120, extra * 0.12)),
   }
 }
 
@@ -148,7 +150,7 @@ function ExpandedRow({ o, open, viewWidth, onChanged }) {
   if (!mounted) return null
   return (
     <tr className="cjs-row-expanded">
-      <td colSpan={8}>
+      <td colSpan={10}>
         <Expand open={shown}>
           <div className="sticky left-0" style={viewWidth ? { width: viewWidth } : undefined}>
             <OrderPanel orderId={o.id} onChanged={onChanged} />
@@ -243,7 +245,9 @@ function DesktopTable({ orders, loading, statuses, types, expanded, toggle, high
           <th style={{ width: W.terms }}>Terminai</th>
           <th style={{ width: W.work }}>Darbas (h) · užsakyta</th>
           <th style={{ width: cols.inv }}>Inventorius</th>
-          <th>Liejimas</th>
+          <th>Komentaras</th>
+          <th style={{ width: cols.prod }}>Produktai</th>
+          <th style={{ width: cols.note }}>Kliento pastaba</th>
           <th style={{ width: W.status }}>Statusas · tipas</th>
           <th className="sticky right-0 z-[4] px-2!" style={{ width: W.actions }}><span className="sr-only">Veiksmai</span></th>
         </tr>
@@ -263,6 +267,14 @@ function DesktopTable({ orders, loading, statuses, types, expanded, toggle, high
                   </div>
                 </td>
                 <td><SkInventory i={i} /></td>
+                <td><SkBox w="100%" h={178} /></td>
+                <td>
+                  <div className="flex flex-col gap-1.5">
+                    <SkLine size={12} w={skw(i, 150)} />
+                    <SkLine size={12} w={skw(i + 1, 120)} />
+                    <SkLine size={12} w={skw(i + 3, 130)} />
+                  </div>
+                </td>
                 <td><SkBox w="100%" h={178} /></td>
                 <td>
                   <div className="flex flex-col gap-1.5">
@@ -304,7 +316,9 @@ function DesktopTable({ orders, loading, statuses, types, expanded, toggle, high
                   </Lock>
                 </td>
                 <td><InventoryList order={o} onOpen={() => toggle(o.id, true)} onOpenStockOrder={onOpenStockOrder} onOpenItem={onOpenItem} onOrderMissing={onOrderMissing} /></td>
-                <td className="cjs-fill-cell"><Lock o={o}><CastingNotes order={o} rows={1} fill /></Lock></td>
+                <td className="cjs-fill-cell"><Lock o={o}><OrderComment order={o} rows={1} fill /></Lock></td>
+                <td><ProductsCompact items={o.items} /></td>
+                <td className="cjs-fill-cell"><CustomerNote order={o} rows={1} fill /></td>
                 <td>
                   <Lock o={o}>
                     <div className="flex min-w-0 flex-col gap-1.5">
@@ -404,10 +418,24 @@ function MobileCards({ orders, statuses, types, expanded, toggle, highlight, sel
                 </Field>
               </div>
               <div className="@md:col-span-2">
-                <Field label="Liejimas">
-                  <CastingNotes order={o} />
+                <Field label="Komentaras">
+                  <OrderComment order={o} />
                 </Field>
               </div>
+              {o.items?.length > 0 && (
+                <div className="@md:col-span-2">
+                  <Field label="Produktai">
+                    <ProductsCompact items={o.items} />
+                  </Field>
+                </div>
+              )}
+              {(o.customer_note || '').trim() !== '' && (
+                <div className="@md:col-span-2">
+                  <Field label="Kliento pastaba">
+                    <CustomerNote order={o} />
+                  </Field>
+                </div>
+              )}
             </div>
             </Lock>
             <CardExpand o={o} open={open} onChanged={() => onRowChanged(o.id)} />
@@ -486,6 +514,8 @@ export default function OrdersPage() {
   const [page, setPage] = useState(() => Number(new URL(window.location.href).searchParams.get('pg')) || 1)
   const [more, setMore] = useState(false)
   const [expanded, setExpanded] = useState(() => new Set())
+  const [allOpen, setAllOpen] = useState(false)
+  const autoOpened = useRef(new Set())
   const [stockOrder, setStockOrder] = useState({ id: null, open: false })
   const locateRef = useRef(Number(new URL(window.location.href).searchParams.get('order') || new URL(window.location.href).searchParams.get('highlight_order')) || 0)
   const [highlight, setHighlight] = useState(locateRef.current || null)
@@ -574,11 +604,30 @@ export default function OrdersPage() {
   const orders = query.data?.orders || []
   const selection = useSelection(orders.map((o) => o.id))
 
+  useEffect(() => {
+    if (!allOpen || !query.data) return
+    const fresh = query.data.orders.map((o) => o.id).filter((id) => !autoOpened.current.has(id))
+    if (!fresh.length) return
+    fresh.forEach((id) => autoOpened.current.add(id))
+    setExpanded((s) => new Set([...s, ...fresh]))
+  }, [allOpen, query.data])
+
+  const toggleAll = () => {
+    autoOpened.current = new Set()
+    if (allOpen) setExpanded(new Set())
+    setAllOpen(!allOpen)
+  }
+
   return (
     <OrderActionsProvider onCompleted={() => query.refetch()}>
       <Page
         title="Open production queue, sorted by delivery deadline"
-        actions={<IconButton icon={ArrowsRotateRight} label="Refresh" variant="secondary" isPending={query.isFetching} onPress={() => query.refetch()} />}
+        actions={
+          <div className="flex items-center gap-1.5">
+            <IconButton icon={allOpen ? ChevronsCollapseVertical : ChevronsExpandVertical} label={allOpen ? 'Collapse all rows' : 'Expand all rows, also on other pages'} variant={allOpen ? 'primary' : 'secondary'} onPress={toggleAll} />
+            <IconButton icon={ArrowsRotateRight} label="Refresh" variant="secondary" isPending={query.isFetching} onPress={() => query.refetch()} />
+          </div>
+        }
       >
         <div className="cjs-card mb-4 p-3 sm:p-4">
           <div className="flex flex-wrap items-center gap-2">

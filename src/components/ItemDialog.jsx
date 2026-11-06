@@ -234,17 +234,33 @@ export function FieldValueInput({ field, value, onChange, unitById, onCatalog })
   return <TextInput aria-label={field.name} value={value?.value_text ?? ''} onChange={(v) => onChange(v === '' ? null : { value_text: v })} />
 }
 
-export function ContextNote({ text, label = 'Liejimas' }) {
-  if (!text || !String(text).trim()) return null
+export function ContextNote({ context }) {
+  const meta = Array.isArray(context?.meta) ? context.meta : []
+  const comment = String(context?.comment || '').trim()
+  if (!meta.length && !comment) return null
   return (
-    <div className="sticky top-0 z-10 border border-separator bg-surface-secondary px-3 py-2 shadow-sm">
-      <div className="mb-1 text-[11px] font-semibold uppercase tracking-wide text-muted">{label}</div>
-      <div className="max-h-[30vh] overflow-y-auto whitespace-pre-wrap break-words text-[13px] leading-relaxed text-foreground">{String(text).trim()}</div>
+    <div className="sticky top-0 z-10 flex max-h-[30vh] flex-col gap-2 overflow-y-auto border border-separator bg-surface-secondary px-3 py-2 shadow-sm">
+      {meta.length > 0 && (
+        <dl className="grid grid-cols-[auto_minmax(0,1fr)] gap-x-3 gap-y-0.5 text-[12.5px] leading-snug">
+          {meta.map((m, i) => (
+            <div key={i} className="contents">
+              <dt className="whitespace-nowrap text-muted">{m.key}</dt>
+              <dd className="min-w-0 break-words text-foreground">{m.value}</dd>
+            </div>
+          ))}
+        </dl>
+      )}
+      {comment && (
+        <div>
+          <div className="mb-0.5 text-[11px] font-semibold uppercase tracking-wide text-muted">Komentaras</div>
+          <div className="whitespace-pre-wrap break-words text-[13px] leading-relaxed text-foreground">{comment}</div>
+        </div>
+      )}
     </div>
   )
 }
 
-export default function ItemDialog({ isOpen, onClose, item, categoryId, defaultCategoryId, initialName = '', contextText, contextLabel, onSaved }) {
+export default function ItemDialog({ isOpen, onClose, item, categoryId, defaultCategoryId, initialName = '', context, onSaved }) {
   const qc = useQueryClient()
   const { catalog, unitById, categoryById } = useCatalog()
   const editing = !!item?.id
@@ -425,7 +441,7 @@ export default function ItemDialog({ isOpen, onClose, item, categoryId, defaultC
       }
     >
       <div className="flex flex-col gap-4">
-        <ContextNote text={contextText} label={contextLabel} />
+        <ContextNote context={context} />
         {restored && <div className="text-[12px] text-muted">Restored what you entered last time. Cancel clears it.</div>}
         {error && (
           <Notice tone="danger" title={error.message}>

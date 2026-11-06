@@ -1,5 +1,5 @@
 const LABELS = {
-  casting_notes: 'Liejimas',
+  casting_notes: 'Komentaras',
   order_model: 'Užsakyti modelį',
   order_production: 'Užsakyti gamybą',
   order_printing: 'Spauda',

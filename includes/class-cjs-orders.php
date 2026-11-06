@@ -33,6 +33,7 @@ class CJS_Orders {
                 'join_billing' => 'LEFT JOIN ' . $wpdb->prefix . "wc_order_addresses ba ON ba.order_id = o.id AND ba.address_type = 'billing'",
                 'meta' => $wpdb->prefix . 'wc_orders_meta',
                 'meta_fk' => 'order_id',
+                'note' => 'o.customer_note',
             ];
         }
         return [
@@ -49,6 +50,7 @@ class CJS_Orders {
                 LEFT JOIN {$wpdb->postmeta} be ON be.post_id = o.ID AND be.meta_key = '_billing_email'",
             'meta' => $wpdb->postmeta,
             'meta_fk' => 'post_id',
+            'note' => 'o.post_excerpt',
         ];
     }
 
@@ -351,7 +353,7 @@ class CJS_Orders {
             }
         }
         $rows = $wpdb->get_results($wpdb->prepare(
-            "SELECT {$s['id']} AS id, {$s['status']} AS wc_status, {$s['created']} AS created_gmt, {$s['first']} AS first_name, {$s['last']} AS last_name, e.order_id AS ext_id,
+            "SELECT {$s['id']} AS id, {$s['status']} AS wc_status, {$s['created']} AS created_gmt, {$s['first']} AS first_name, {$s['last']} AS last_name, {$s['note']} AS customer_note, e.order_id AS ext_id,
                 e.manufacture_by_date, e.finish_by_date, e.deliver_by_date, e.order_model, e.order_production, e.casting_notes, e.order_printing, e.manufacturing_status, e.order_type, e.assigned_hours, e.completed_hours
              $from WHERE $where ORDER BY $order_by LIMIT %d OFFSET %d",
             $per_page, ($page - 1) * $per_page
@@ -458,6 +460,7 @@ class CJS_Orders {
             'order_production' => (bool) (int) ($ext['order_production'] ?? 0),
             'order_printing' => (bool) (int) ($ext['order_printing'] ?? 0),
             'casting_notes' => (string) ($ext['casting_notes'] ?? ''),
+            'customer_note' => trim((string) ($r['customer_note'] ?? '')),
             'manufacturing_status' => CJS_Statuses::display($status),
             'status_key' => $status_key ?? 'nepradeta',
             'status_times' => $times,
@@ -522,16 +525,33 @@ class CJS_Orders {
              WHERE i.order_item_type = 'line_item' AND i.order_id IN (" . CJS_Inv_DB::ids_in($ids) . ') ORDER BY i.order_item_id',
             ARRAY_A
         ) ?: [];
+        if ($rows) {
+            update_meta_cache('order_item', array_map(function ($r) { return (int) $r['order_item_id']; }, $rows));
+        }
         $out = [];
         foreach ($rows as $r) {
+            $item = class_exists('WC_Order_Factory') ? WC_Order_Factory::get_order_item((int) $r['order_item_id']) : null;
             $out[(int) $r['order_id']][] = [
                 'id' => (int) $r['order_item_id'],
                 'name' => $r['order_item_name'],
                 'qty' => (float) $r['qty'],
                 'product_id' => (int) $r['product_id'],
+                'meta' => $item ? self::item_meta($item) : [],
             ];
         }
         return $out;
+    }
+
+    public static function item_meta($item) {
+        $meta = [];
+        try {
+            foreach ($item->get_formatted_meta_data('', true) as $m) {
+                $meta[] = ['key' => wp_strip_all_tags((string) $m->display_key), 'value' => trim(wp_strip_all_tags((string) $m->display_value))];
+            }
+        } catch (Throwable $e) {
+            return [];
+        }
+        return $meta;
     }
 
     public static function inventory_lines_for(array $ids) {
@@ -722,6 +742,7 @@ class CJS_Orders {
             'created_gmt' => $order->get_date_created() ? gmdate('Y-m-d H:i:s', $order->get_date_created()->getTimestamp()) : '',
             'first_name' => $order->get_billing_first_name(),
             'last_name' => $order->get_billing_last_name(),
+            'customer_note' => (string) $order->get_customer_note(),
         ];
         $meta = ['cjs_custom_deadline' => $order->get_meta('cjs_custom_deadline')];
         foreach (self::offer_meta_keys() as $key) {
@@ -744,10 +765,7 @@ class CJS_Orders {
         $row = self::single($order_id);
         $items = [];
         foreach ($order->get_items() as $item_id => $item) {
-            $meta = [];
-            foreach ($item->get_formatted_meta_data('', true) as $m) {
-                $meta[] = ['key' => wp_strip_all_tags($m->display_key), 'value' => wp_strip_all_tags($m->display_value)];
-            }
+            $meta = self::item_meta($item);
             $product = $item->get_product();
             $image = '';
             if ($product) {
@@ -1253,27 +1271,94 @@ class CJS_Orders {
         return array_values(self::order_labels(array_map('intval', $ids)));
     }
 
-    public static function variant_text(int $order_id) {
+    public static function clear_autofilled_comments() {
+        global $wpdb;
+        $s = self::src();
+        $e = $wpdb->prefix . 'cjs_order_extensions';
+        $excluded = implode(',', array_map(function ($st) use ($wpdb) { return $wpdb->prepare('%s', $st); }, self::EXCLUDED_STATUSES));
+        $rows = $wpdb->get_results("SELECT e.order_id, e.casting_notes FROM $e e INNER JOIN {$s['orders']} o ON {$s['id']} = e.order_id WHERE {$s['type']} AND {$s['status']} NOT IN ($excluded) AND e.casting_notes IS NOT NULL AND e.casting_notes <> ''", ARRAY_A) ?: [];
+        $select_error = (string) $wpdb->last_error;
+        $changed = 0;
+        $no_parts = 0;
+        foreach ($rows as $r) {
+            $oid = (int) $r['order_id'];
+            $old = (string) $r['casting_notes'];
+            $parts = self::option_parts($oid);
+            if (!$parts) {
+                $no_parts++;
+                continue;
+            }
+            $new = self::strip_option_parts($old, $parts);
+            if ($new === $old) {
+                continue;
+            }
+            $wpdb->update($e, ['casting_notes' => $new], ['order_id' => $oid]);
+            CJS_Logger::log('Comment cleaned: product options removed, extra text kept', 'info', 'order', $oid, ['field' => 'casting_notes', 'old' => $old, 'new' => $new]);
+            $changed++;
+        }
+        return ['rows' => count($rows), 'changed' => $changed, 'no_options' => $no_parts, 'db_error' => $select_error];
+    }
+
+    private static function option_parts(int $order_id) {
         $order = wc_get_order($order_id);
         if (!$order) {
-            return '';
+            return [];
         }
-        $items = $order->get_items();
-        $seen = [];
         $parts = [];
-        foreach ($items as $item) {
-            foreach ($item->get_formatted_meta_data('', true) as $meta) {
-                $key = wp_strip_all_tags($meta->display_key);
-                if (isset($seen[$key])) {
-                    continue;
+        foreach ($order->get_items() as $item) {
+            foreach (self::item_meta($item) as $m) {
+                $part = trim($m['key'] . ': ' . $m['value']);
+                if ($m['key'] !== '' && $m['value'] !== '') {
+                    $parts[$part] = true;
                 }
-                $seen[$key] = true;
-                $parts[] = $key . ': ' . wp_strip_all_tags($meta->display_value);
-            }
-            if (count($items) === 1) {
-                break;
             }
         }
-        return implode(', ', $parts);
+        $parts = array_keys($parts);
+        usort($parts, function ($a, $b) { return mb_strlen($b) - mb_strlen($a); });
+        return $parts;
+    }
+
+    private static function strip_option_parts(string $text, array $parts) {
+        if (!$parts || trim($text) === '') {
+            return $text;
+        }
+        $patterns = [];
+        foreach ($parts as $p) {
+            $words = preg_split('/\s+/u', trim((string) $p), -1, PREG_SPLIT_NO_EMPTY);
+            if ($words) {
+                $patterns[] = '/' . implode('\s*', array_map(function ($w) { return preg_quote($w, '/'); }, $words)) . '/u';
+            }
+        }
+        $out = [];
+        $touched = false;
+        foreach (preg_split('/\r\n|\r|\n/', $text) as $line) {
+            $stripped = $line;
+            foreach ($patterns as $pattern) {
+                $next = preg_replace($pattern, '', $stripped);
+                if (is_string($next)) {
+                    $stripped = $next;
+                }
+            }
+            if ($stripped === $line) {
+                $out[] = $line;
+                continue;
+            }
+            $touched = true;
+            $stripped = (string) preg_replace('/[ \t]*[,;](?:[ \t]*[,;])+/u', ',', $stripped);
+            $stripped = trim($stripped, " \t,;");
+            if ($stripped !== '') {
+                $out[] = $stripped;
+            }
+        }
+        if (!$touched) {
+            return $text;
+        }
+        while ($out && trim((string) end($out)) === '') {
+            array_pop($out);
+        }
+        while ($out && trim((string) $out[0]) === '') {
+            array_shift($out);
+        }
+        return implode("\n", $out);
     }
 }

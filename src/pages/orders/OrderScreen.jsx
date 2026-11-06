@@ -1,7 +1,7 @@
 import { useBootstrap } from '../../lib/hooks'
 import { Field, Loading, Notice, Section, cx } from '../../components/ui'
 import { OrderActionsProvider, LOCK_TEXT } from './orderActions'
-import { DatesEditor, HoursEditor, FlagsEditor, StatusSelect, TypeSelect, CastingNotes } from './OrderFields'
+import { DatesEditor, HoursEditor, FlagsEditor, StatusSelect, TypeSelect, OrderComment } from './OrderFields'
 import OrderPanel, { OrderBadges, useOrderPanel } from './OrderPanel'
 import { WooEditGuard } from './WooGuards'
 
@@ -30,8 +30,8 @@ function ProductionCard({ order, statuses, types }) {
           </div>
         </div>
       </Section>
-      <Section title="Liejimas" className="min-w-0 @xl:col-span-2 @3xl:col-span-1">
-        <CastingNotes order={order} rows={5} />
+      <Section title="Komentaras" className="min-w-0 @xl:col-span-2 @3xl:col-span-1">
+        <OrderComment order={order} rows={5} />
         <OrderBadges order={order} />
       </Section>
     </div>

@@ -120,9 +120,6 @@ class CJS_API {
             $result = CJS_Orders::complete((int) $r['id'], ['confirmed' => !empty($p['confirmed']) && $p['confirmed'] !== 'false', 'decisions' => (array) ($p['decisions'] ?? [])]);
             return is_wp_error($result) ? $result : ['ok' => true];
         });
-        self::route('/orders/(?P<id>\d+)/variant-text', 'GET', function ($r) {
-            return ['text' => CJS_Orders::variant_text((int) $r['id'])];
-        });
         self::route('/orders/(?P<id>\d+)/demands', 'POST', function ($r) {
             $p = self::p($r);
             $id = isset($p['metal']) && is_string($p['metal']) && $p['metal'] !== ''

@@ -272,7 +272,7 @@ export default function ItemPicker({
   label,
   className,
   onlyPerPiece,
-  contextText,
+  context,
   isDisabled,
   metalRows,
   extraSections,
@@ -604,7 +604,7 @@ export default function ItemPicker({
           categoryId={categoryId}
           defaultCategoryId={cat || sections[0]?.category_id}
           initialName={seed}
-          contextText={contextText}
+          context={context}
           onSaved={(it) => {
             if (!it) return
             if (onCreated) {
